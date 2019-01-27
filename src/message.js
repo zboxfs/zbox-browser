@@ -1,10 +1,25 @@
 /*
  * Message types
  */
-const types = {
-    init: "init",
-    open: "open",
-    close: "close"
+const MsgTypes = {
+    zbox: {
+        init: "init",
+        exists: "exists",
+        open: "open"
+    },
+    repo: {
+        close: "close",
+        info: "info",
+        createFile: "createFile",
+        openFile: "openFile",
+        readDir: "readDir"
+    },
+    file: {
+        close: "close",
+        readAll: "readAll",
+        writeOnce: "writeOnce",
+        metadata: "metadata"
+    }
 };
 
-export default types;
+export default MsgTypes;
