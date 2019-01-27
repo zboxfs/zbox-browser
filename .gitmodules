@@ -1,0 +1,4 @@
+[submodule "zbox"]
+	path = zbox
+	url = https://github.com/zboxfs/zbox.git
+	branch = feature-wasm
