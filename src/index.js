@@ -6,6 +6,12 @@ const ctx = {
     worker: null
 };
 
+const SeekFrom = {
+    START: 0,
+    END: 1,
+    CURRENT: 2
+};
+
 class Base {
     constructor(scope) {
         this.scope = scope;
@@ -16,7 +22,13 @@ class Base {
         const self = this;
         return new Promise((resolve, reject) => {
             ctx.resolver.add(self.scope, msgType, resolve, reject);
-            ctx.worker.postMessage({ scope: self.scope, type: msgType, object, params });
+            const msg = { scope: self.scope, type: msgType, object, params };
+            if (msgType == 'read' || msgType == 'write') {
+                msg.params = params.buffer;
+                ctx.worker.postMessage(msg, [params.buffer]);
+            } else {
+                ctx.worker.postMessage(msg);
+            }
         });
     }
 }
@@ -40,6 +52,18 @@ class File extends Base {
         // add methods based on message types
         Object.keys(MsgTypes[this.scope]).forEach(msgType => {
             File.prototype[msgType] = this._bindMsg.bind(this, msgType, this.fd);
+        });
+    }
+}
+
+class VersionReader extends Base {
+    constructor(vrdr) {
+        super('versionReader');
+        this.vrdr = vrdr;
+
+        // add methods based on message types
+        Object.keys(MsgTypes[this.scope]).forEach(msgType => {
+            VersionReader.prototype[msgType] = this._bindMsg.bind(this, msgType, this.vrdr);
         });
     }
 }
@@ -83,7 +107,35 @@ class Resolver {
             case 'repo':
                 switch (msg.type) {
                     case msgTypes.openFile:
-                        result = new File(msg.result);
+                        result = new File(result);
+                        break;
+                }
+                break;
+
+            case 'file':
+                switch (msg.type) {
+                    case msgTypes.read:
+                        result.data = new Uint8Array(result.data);
+                        break;
+
+                    case msgTypes.readAll:
+                        result = new Uint8Array(result);
+                        break;
+
+                    case msgTypes.versionReader:
+                        result = new VersionReader(result);
+                        break;
+                }
+                break;
+
+            case 'versionReader':
+                switch (msg.type) {
+                    case msgTypes.read:
+                        result.data = new Uint8Array(result.data);
+                        break;
+
+                    case msgTypes.readAll:
+                        result = new Uint8Array(result);
                         break;
                 }
                 break;
@@ -142,8 +194,12 @@ async function run() {
         //await file.writeOnce(buf);
 
         let file = await repo.openFile("/file");
-        let buf = await file.readAll();
-        console.log(buf);
+        //let newPos = await file.seek({ from: SeekFrom.START, offset: 1 });
+        //console.log(newPos);
+        //let dst = new Uint8Array(2);
+        //let result = await file.read(dst);
+        let result = await file.readAll();
+        console.log(result);
 
         await file.close();
         console.log(`file closed`);

@@ -10,15 +10,42 @@ const MsgTypes = {
     repo: {
         close: "close",
         info: "info",
+        resetPassword: "resetPassword",
+        pathExists: "pathExists",
+        isFile: "isFile",
+        isDir: "isDir",
         createFile: "createFile",
         openFile: "openFile",
-        readDir: "readDir"
+        createDir: "createDir",
+        createDirAll: "createDirAll",
+        readDir: "readDir",
+        metadata: "metadata",
+        history: "history",
+        copy: "copy",
+        removeFile: "removeFile",
+        removeDir: "removeDir",
+        removeDirAll: "removeDirAll",
+        rename: "rename"
     },
     file: {
         close: "close",
+        read: "read",
         readAll: "readAll",
+        write: "write",
+        finish: "finish",
         writeOnce: "writeOnce",
-        metadata: "metadata"
+        seek: "seek",
+        setLen: "setLen",
+        currVersion: "currVersion",
+        versionReader: "versionReader",
+        metadata: "metadata",
+        history: "history"
+    },
+    versionReader: {
+        close: "close",
+        read: "read",
+        readAll: "readAll",
+        seek: "seek"
     }
 };
 
