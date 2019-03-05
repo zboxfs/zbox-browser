@@ -1,5 +1,7 @@
 import MsgTypes from "./message.js";
+import { backend } from './cache_backend';
 
+// global zbox and repo object
 let zbox = null;
 let repo = null;
 
@@ -11,40 +13,67 @@ let opened = {
     vrdrs: {}       // version readers
 };
 
+// add wasm cache type paramter to uri
+function appendCacheTypeToUri(uri) {
+    const cacheType = 'cache_type=wasm';
+    if (uri.includes('cache_size')) {
+        uri += '&' + cacheType;
+    } else if (!uri.includes('?')) {
+        uri += '?' + cacheType;
+    }
+    return uri;
+}
+
 function zboxMsgHandler(msg, msgTypes) {
     switch (msg.type) {
-        case msgTypes.init:
-            import("./wasm/zbox")
+        case msgTypes.init: {
+            backend.init()
+                .then(() => import("./wasm/zbox"))
                 .then(wasm => {
                     zbox = wasm;
                     zbox.init_env();
-                    postMessage(msg);
                 })
-                .catch(err => {
-                    msg.error = err;
-                    console.error(`init env failed: ${err}`);
-                });
-            return;
-
-        case msgTypes.exists:
-            zbox.Repo.exists(msg.params.uri);
+                .catch(err => msg.error = `init failed: ${err}`)
+                .finally(() => postMessage(msg));
             break;
+        }
 
-        case msgTypes.open:
-            let opener = new zbox.RepoOpener();
-            let opts = msg.params.opts || {};
-            if (opts.hasOwnProperty('create')) opener.create(opts.create);
-            if (opts.hasOwnProperty('createNew')) opener.createNew(opts.createNew);
-            if (opts.hasOwnProperty('compress')) opener.compress(opts.compress);
-            if (opts.hasOwnProperty('versionLimit')) opener.versionLimit(opts.versionLimit);
-            if (opts.hasOwnProperty('dedupChunk')) opener.dedupChunk(opts.dedupChunk);
-            if (opts.hasOwnProperty('readOnly')) opener.readOnly(opts.readOnly);
-            repo = opener.open(msg.params.uri, msg.params.pwd);
+        case msgTypes.exists: {
+            zbox.Repo.exists(appendCacheTypeToUri(msg.params.uri));
+            postMessage(msg);
             break;
+        }
+
+        case msgTypes.open: {
+            // load local cache backend and then open zbox
+            backend.open()
+                .then(() => {
+                    // open zbox
+                    let opener = new zbox.RepoOpener();
+                    let opts = msg.params.opts || {};
+
+                    if (opts.hasOwnProperty('create'))
+                        opener.create(opts.create);
+                    if (opts.hasOwnProperty('createNew'))
+                        opener.createNew(opts.createNew);
+                    if (opts.hasOwnProperty('compress'))
+                        opener.compress(opts.compress);
+                    if (opts.hasOwnProperty('versionLimit'))
+                        opener.versionLimit(opts.versionLimit);
+                    if (opts.hasOwnProperty('dedupChunk'))
+                        opener.dedupChunk(opts.dedupChunk);
+                    if (opts.hasOwnProperty('readOnly'))
+                        opener.readOnly(opts.readOnly);
+
+                    let uri = appendCacheTypeToUri(msg.params.uri);
+                    repo = opener.open(uri, msg.params.pwd);
+                })
+                .catch(err => msg.error = `open failed: ${err}`)
+                .finally(() => postMessage(msg));
+
+            break;
+        }
     }
-
-    // send message back to main thread
-    postMessage(msg);
 }
 
 function repoMsgHandler(msg, msgTypes) {
@@ -54,8 +83,11 @@ function repoMsgHandler(msg, msgTypes) {
                 let cnt = Object.keys(opened.files).length;
                 if (cnt > 0) { console.warn(`${cnt} file(s) still opened`); }
                 cnt = Object.keys(opened.vrdrs).length;
-                if (cnt > 0) { console.warn(`${cnt} version reader(s) still opened`); }
+                if (cnt > 0) {
+                    console.warn(`${cnt} version reader(s) still opened`);
+                }
                 repo.close();
+                backend.close();
             }
             break;
 
@@ -162,7 +194,7 @@ function repoMsgHandler(msg, msgTypes) {
 function fileMsgHandler(msg, msgTypes) {
     let file = opened.files[msg.object];
 
-    if (file == undefined) {
+    if (file === undefined) {
         throw 'File is closed';
     }
 
@@ -292,7 +324,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
     let msg = event.data;
-    console.log(`Message received from main thread: ${JSON.stringify(msg)}`);
+    console.log(`main -> worker: ${JSON.stringify(msg)}`);
 
     // reset message result and error
     msg.result = null;

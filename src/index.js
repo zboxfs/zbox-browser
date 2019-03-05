@@ -12,6 +12,15 @@ const SeekFrom = {
     CURRENT: 2
 };
 
+// check browser for functionality support
+function checkBrowserSupport() {
+    if (!window.indexedDB) {
+        console.error("Your browser doesn't support IndexedDB");
+        return false;
+    }
+    return true;
+}
+
 class Base {
     constructor(scope) {
         this.scope = scope;
@@ -85,7 +94,7 @@ class Resolver {
 
     resolve(event) {
         const msg = event.data;
-        console.log(`msg received from worker: ${JSON.stringify(msg)}`);
+        console.log(`worker -> main: ${JSON.stringify(msg)}`);
 
         if (msg.error) {
             this.map[msg.scope][msg.type].reject(msg.error);
@@ -169,7 +178,7 @@ class Zbox extends Base {
     }
 }
 
-let uri = "zbox://accessKey456@repo456?cache_type=mem&cache_size=1";
+let uri = "zbox://accessKey456@repo456?cache_size=1mb";
 let pwd = "pwd";
 
 let zbox = new Zbox();
@@ -182,27 +191,27 @@ async function run() {
         console.log(`init done`);
 
         let repo = await zbox.open({ uri, pwd, opts: {
-            create: true
+            create: false
         }});
         console.log(`repo opened`);
 
-        //let file = await repo.openFile({
-            //path: "/file",
-            //opts: { create: true }
-        //});
-        //let buf = new Uint8Array([4, 5, 6]);
-        //await file.writeOnce(buf);
+        /*let file = await repo.openFile({
+            path: "/file",
+            opts: { create: true }
+        });
+        let buf = new Uint8Array([4, 5, 6]);
+        await file.writeOnce(buf);
+        await file.close();*/
 
-        let file = await repo.openFile("/file");
+        let file2 = await repo.openFile("/file");
         //let newPos = await file.seek({ from: SeekFrom.START, offset: 1 });
         //console.log(newPos);
         //let dst = new Uint8Array(2);
         //let result = await file.read(dst);
-        let result = await file.readAll();
+        let result = await file2.readAll();
         console.log(result);
-
-        await file.close();
-        console.log(`file closed`);
+        await file2.close();
+        console.log(`file2 closed`);
 
         await repo.close();
         console.log(`repo closed`);
