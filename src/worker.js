@@ -1,4 +1,5 @@
 import MsgTypes from "./message.js";
+import { logger } from './logger';
 import { backend } from './cache_backend';
 
 // global zbox and repo object
@@ -15,7 +16,7 @@ let opened = {
 
 // add wasm cache type paramter to uri
 function appendCacheTypeToUri(uri) {
-    const cacheType = 'cache_type=wasm';
+    const cacheType = 'cache_type=browser';
     if (uri.includes('cache_size')) {
         uri += '&' + cacheType;
     } else if (!uri.includes('?')) {
@@ -27,11 +28,13 @@ function appendCacheTypeToUri(uri) {
 function zboxMsgHandler(msg, msgTypes) {
     switch (msg.type) {
         case msgTypes.init: {
+            let loggingOn = msg.params ? msg.params.logging : false;
+            logger.enable(loggingOn);
             backend.init()
                 .then(() => import('./wasm/zbox'))
                 .then(wasm => {
                     zbox = wasm;
-                    zbox.init_env();
+                    zbox.init_env(loggingOn);
                 })
                 .catch(err => msg.error = `init failed: ${err}`)
                 .finally(() => postMessage(msg));
@@ -81,10 +84,10 @@ function repoMsgHandler(msg, msgTypes) {
         case msgTypes.close:
             {
                 let cnt = Object.keys(opened.files).length;
-                if (cnt > 0) { console.warn(`${cnt} file(s) still opened`); }
+                if (cnt > 0) { logger.warn(`${cnt} file(s) still opened`); }
                 cnt = Object.keys(opened.vrdrs).length;
                 if (cnt > 0) {
-                    console.warn(`${cnt} version reader(s) still opened`);
+                    logger.warn(`${cnt} version reader(s) still opened`);
                 }
                 repo.close();
                 backend.close()
@@ -326,7 +329,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
     let msg = event.data;
-    //console.log(`main -> worker: ${JSON.stringify(msg)}`);
+    //logger.log(`main -> worker: ${JSON.stringify(msg)}`);
 
     // reset message result and error
     msg.result = null;

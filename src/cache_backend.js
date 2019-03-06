@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 // local cache db and store name
 const LOCAL_CACHE_DB = 'zbox_local_cache';
 const LOCAL_CACHE_STORE = 'cache';
@@ -51,7 +53,7 @@ class CacheBackend {
                 items.forEach(item => {
                     self.map.set(item.relPath, item.data);
                 });
-                console.log(`backend.open: ${items.length} items loaded`);
+                logger.log(`backend opened: ${items.length} cache items loaded`);
                 resolve();
             };
         });
@@ -111,7 +113,7 @@ class CacheBackend {
             .objectStore(LOCAL_CACHE_STORE)
             .clear();
         req.onerror = (event) => {
-            console.error('Clear local cache failed ' + event.target.errorCode);
+            logger.error('Clear local cache failed ' + event.target.errorCode);
         };
     }
 }

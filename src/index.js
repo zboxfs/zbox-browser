@@ -187,7 +187,7 @@ async function run() {
     let result;
 
     try {
-        await zbox.init();
+        await zbox.init({ logging: true });
 
         let repo = await zbox.open({ uri, pwd, opts: {
             create: false
