@@ -2,23 +2,11 @@
 const LOCAL_CACHE_DB = 'zbox_local_cache';
 const LOCAL_CACHE_STORE = 'cache';
 
-// local cache update sequence number key
-const LOCAL_CACHE_SEQ = '_seq';
-
 // local cache backend
 class CacheBackend {
     constructor() {
         this.db = null;
-        this._seq = 0;
         this.map= new Map();
-    }
-
-    get seq() {
-        return this._seq;
-    }
-
-    set seq(s) {
-        this._seq = s;
     }
 
     init() {
@@ -63,14 +51,41 @@ class CacheBackend {
                 items.forEach(item => {
                     self.map.set(item.relPath, item.data);
                 });
+                console.log(`backend.open: ${items.length} items loaded`);
                 resolve();
             };
         });
     }
 
     close() {
-        this.db.close();
-        this.map.clear();
+        let self = this;
+
+        return new Promise((resolve, reject) => {
+            let tx = self.db.transaction(LOCAL_CACHE_STORE, 'readwrite');
+
+            tx.onabort = (event) => {
+                self.map.clear();
+                reject('Database tx aborted: ' + event.target.errorCode);
+            };
+            tx.onerror = (event) => {
+                self.map.clear();
+                reject('Database tx error: ' + event.target.errorCode);
+            };
+            tx.oncomplete = (event) => {
+                self.map.clear();
+                resolve();
+            };
+
+            let store = tx.objectStore(LOCAL_CACHE_STORE);
+
+            // clear all store then save all items from memory map
+            store.clear();
+            self.map.forEach((value, key) => {
+                store.put({ relPath: key, data: value });
+            });
+
+            self.db.close();
+        });
     }
 
     contains(relPath) {
@@ -82,54 +97,15 @@ class CacheBackend {
     }
 
     insert(relPath, data) {
-        console.log("=== backend.insert: " + relPath + ","+ this._seq);
-        let self = this;
-
         this.map.set(relPath, data);
-
-        let tx = this.db.transaction(LOCAL_CACHE_STORE, 'readwrite');
-        tx.onerror = (event) => {
-            console.error('Insert local cache item failed ' + event.target.errorCode);
-        };
-        tx.oncomplete = (event) => {
-            console.log('---> tx completed');
-            self._seq += 1;
-        };
-
-        let store = tx.objectStore(LOCAL_CACHE_STORE);
-        let req = store.put({ relPath, data });
-        req.onsuccess = (event) => {
-            console.log('---> req onsuccess');
-        };
-        let req2= store.put({ relPath: LOCAL_CACHE_SEQ, data: this._seq });
-        req2.onsuccess = (event) => {
-            console.log('---> req2 onsuccess');
-        };
     }
 
     remove(relPath) {
-        console.log("=== backend.remove: " + relPath +"," +this._seq);
-        let self = this;
-
         this.map.delete(relPath);
-
-        let tx = this.db.transaction(LOCAL_CACHE_STORE, 'readwrite');
-        tx.onerror = (event) => {
-            console.error('Remove local cache item failed ' + event.target.errorCode);
-        };
-        tx.oncomplete = (event) => {
-            console.log('--->tx completed');
-            self._seq += 1;
-        };
-
-        let store = tx.objectStore(LOCAL_CACHE_STORE);
-        store.delete(relPath);
-        store.put({ relPath: LOCAL_CACHE_SEQ, data: this._seq });
     }
 
     clear() {
         this.map.clear();
-        this._seq = 0;
 
         let req = this.db.transaction(LOCAL_CACHE_STORE, "readwrite")
             .objectStore(LOCAL_CACHE_STORE)
@@ -141,14 +117,6 @@ class CacheBackend {
 }
 
 export let backend = new CacheBackend();
-
-export function getUpdateSeq() {
-    return backend.seq;
-}
-
-export function setUpdateSeq(seq) {
-    backend.seq = seq;
-}
 
 export function contains(relPath) {
     return backend.contains(relPath);

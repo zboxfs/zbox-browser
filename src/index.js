@@ -94,7 +94,7 @@ class Resolver {
 
     resolve(event) {
         const msg = event.data;
-        console.log(`worker -> main: ${JSON.stringify(msg)}`);
+        //console.log(`worker -> main: ${JSON.stringify(msg)}`);
 
         if (msg.error) {
             this.map[msg.scope][msg.type].reject(msg.error);
@@ -188,33 +188,32 @@ async function run() {
 
     try {
         await zbox.init();
-        console.log(`init done`);
 
         let repo = await zbox.open({ uri, pwd, opts: {
             create: false
         }});
-        console.log(`repo opened`);
 
         /*let file = await repo.openFile({
-            path: "/file",
+            path: "/file3",
             opts: { create: true }
         });
-        let buf = new Uint8Array([4, 5, 6]);
+        let buf = new Uint8Array([44, 55, 66]);
         await file.writeOnce(buf);
         await file.close();*/
 
-        let file2 = await repo.openFile("/file");
+        //let file2 = await repo.openFile("/file");
         //let newPos = await file.seek({ from: SeekFrom.START, offset: 1 });
         //console.log(newPos);
         //let dst = new Uint8Array(2);
         //let result = await file.read(dst);
-        let result = await file2.readAll();
-        console.log(result);
-        await file2.close();
-        console.log(`file2 closed`);
+        //let result = await file2.readAll();
+        //await file2.close();
+        //console.log(`file2 closed`);
+
+        let dirs = await repo.readDir("/");
+        console.log(dirs);
 
         await repo.close();
-        console.log(`repo closed`);
 
         zbox.exit();
         console.log(`zbox worker exited`);

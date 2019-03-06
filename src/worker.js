@@ -28,7 +28,7 @@ function zboxMsgHandler(msg, msgTypes) {
     switch (msg.type) {
         case msgTypes.init: {
             backend.init()
-                .then(() => import("./wasm/zbox"))
+                .then(() => import('./wasm/zbox'))
                 .then(wasm => {
                     zbox = wasm;
                     zbox.init_env();
@@ -87,9 +87,11 @@ function repoMsgHandler(msg, msgTypes) {
                     console.warn(`${cnt} version reader(s) still opened`);
                 }
                 repo.close();
-                backend.close();
+                backend.close()
+                    .catch(err => msg.error = `close failed: ${err}`)
+                    .finally(() => postMessage(msg));
             }
-            break;
+            return;
 
         case msgTypes.info:
             msg.result = repo.info();
@@ -324,7 +326,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
     let msg = event.data;
-    console.log(`main -> worker: ${JSON.stringify(msg)}`);
+    //console.log(`main -> worker: ${JSON.stringify(msg)}`);
 
     // reset message result and error
     msg.result = null;
@@ -351,7 +353,6 @@ onmessage = function(event) {
                 break;
         }
     } catch (err) {
-        //console.error(`${err}`);
         msg.error = err;
         postMessage(msg);
     }
