@@ -178,7 +178,7 @@ class Zbox extends Base {
     }
 }
 
-let uri = "zbox://accessKey456@repo456?cache_size=1mb";
+let uri = "zbox://aaa@bbb?cache_size=1mb";
 let pwd = "pwd";
 
 let zbox = new Zbox();
@@ -223,5 +223,5 @@ async function run() {
     }
 }
 
-run();
+//run();
 

@@ -1,4 +1,22 @@
 {
+    "name": "@zbox/browser",
+    "version": "0.1.1",
+    "description": "Browser javascript binding for ZboxFS",
+    "keywords": [
+        "filesystem",
+        "crypto",
+        "security",
+        "privacy",
+        "rust"
+    ],
+    "homepage": "https://github.com/zboxfs/zbox-browser",
+    "license": "Apache-2.0",
+    "author": "Zbox Support <support@zbox.io>",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zboxfs/zbox-browser"
+    },
+    "browser": "./src/index.js",
     "scripts": {
         "serve": "webpack-dev-server"
     },

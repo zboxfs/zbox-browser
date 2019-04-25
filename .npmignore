@@ -1,0 +1,5 @@
+# ignore files and folders for building zbox wasm file
+.gitmodules
+build.sh
+webpack.config.js
+zbox
