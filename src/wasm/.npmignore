@@ -1,0 +1,5 @@
+# do not ignore zbox wasm file
+!zbox.d.ts
+!zbox.js
+!zbox_bg.d.ts
+!zbox_bg.wasm

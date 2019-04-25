@@ -189,9 +189,9 @@ async function run() {
     try {
         await zbox.init({ logging: true });
 
-        let repo = await zbox.open({ uri, pwd, opts: {
-            create: false
-        }});
+        //let repo = await zbox.open({ uri, pwd, opts: {
+            //create: false
+        //}});
 
         /*let file = await repo.openFile({
             path: "/file3",
@@ -210,10 +210,10 @@ async function run() {
         //await file2.close();
         //console.log(`file2 closed`);
 
-        let dirs = await repo.readDir("/");
+        /*let dirs = await repo.readDir("/");
         console.log(dirs);
 
-        await repo.close();
+        await repo.close();*/
 
         zbox.exit();
         console.log(`zbox worker exited`);
@@ -223,5 +223,5 @@ async function run() {
     }
 }
 
-//run();
+run();
 

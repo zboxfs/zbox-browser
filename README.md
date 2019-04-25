@@ -1,4 +1,4 @@
-# ZboxFS Browser JS binding
+# Browser Javascript Binding for ZboxFS
 
 This package is browser javascript binding for
 [ZboxFS](https://github.com/zboxfs/zbox).
