@@ -18,12 +18,14 @@
     },
     "browser": "./src/index.js",
     "scripts": {
-        "serve": "webpack-dev-server"
+        "build": "WEBPACK_ENV=prod webpack --mode=production",
+        "test": "node_modules/.bin/webpack-dev-server --progress --color"
     },
     "devDependencies": {
-        "html-webpack-plugin": "^3.2.0",
+        "chai": "^4.2.0",
+        "mocha": "^6.1.4",
         "webpack": "^4.29.5",
         "webpack-cli": "^3.2.3",
-        "webpack-dev-server": "^3.1.14"
+        "webpack-dev-server": "^3.3.1"
     }
 }

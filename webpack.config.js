@@ -1,28 +1,39 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+const outputPath = path.resolve(__dirname, 'lib');
 
 const browserConfig = {
-    entry: "./src/index.js",
-    output: {
-        path: path.resolve(__dirname, "dist"),
-        filename: "index.js",
-    },
-    plugins: [
-        new HtmlWebpackPlugin({
-            title: "Zbox WASM Dev"
-        })
+  entry: './src/index.js',
+  target: 'web',
+  output: {
+    path: outputPath,
+    filename: 'index.js',
+    library: 'Zbox',
+    libraryTarget: 'umd'
+  },
+  devtool: 'source-map',
+  devServer: {
+    contentBase: [
+      outputPath,
+      path.resolve(__dirname, 'test'),
+      path.resolve(__dirname, 'node_modules/')
     ],
-    mode: "development"
+    compress: true,
+    port: 9000,
+    index: 'index.html'
+  },
+  mode: 'development'
 };
 
 const workerConfig = {
-    entry: "./src/worker.js",
-    target: 'webworker',
-    output: {
-        path: path.resolve(__dirname, "dist"),
-        filename: "worker.js"
-    },
-    mode: "development"
+  entry: './src/worker.js',
+  target: 'webworker',
+  output: {
+    path: outputPath,
+    filename: 'worker.js'
+  },
+  devtool: 'source-map',
+  mode: 'development'
 };
 
 module.exports = [browserConfig, workerConfig]

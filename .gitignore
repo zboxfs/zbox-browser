@@ -79,3 +79,5 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
+# Zbox lib build output dir
+lib/

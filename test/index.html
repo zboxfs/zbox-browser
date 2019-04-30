@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Mocha Tests</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="mocha/mocha.css" />
+  </head>
+  <body>
+    <div id="mocha"></div>
+
+    <script src="chai/chai.js"></script>
+    <script src="mocha/mocha.js"></script>
+
+    <script class="mocha-init">
+      mocha.setup('bdd');
+      const expect = chai.expect;
+      const assert = chai.assert;
+    </script>
+
+    <script src="index.js"></script>
+    <script src="zbox_test.js"></script>
+
+    <script class="mocha-exec">
+      mocha.run();
+    </script>
+  </body>
+</html>
+
