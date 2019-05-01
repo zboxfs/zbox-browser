@@ -39,6 +39,11 @@ describe('Repo Open/Close Test', function() {
     if (repo) await repo.close();
   });
 
+  it('should check repo exists', async function() {
+    const result = await zbox.exists(uri);
+    expect(result).to.be.true;
+  });
+
   it('should not open repo with wrong uri', async function() {
     await expectError(zbox.openRepo({ uri: "", pwd }));
     await expectError(zbox.openRepo({ uri: "wrong uri", pwd }));

@@ -42,8 +42,8 @@ function zboxMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.exists: {
-      ensureStr(msg.params.uri);
-      zbox.Repo.exists(appendCacheTypeToUri(msg.params.uri));
+      ensureStr(msg.params);
+      msg.result = zbox.Repo.exists(appendCacheTypeToUri(msg.params));
       postMessage(msg);
       break;
     }
