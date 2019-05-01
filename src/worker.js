@@ -1,6 +1,7 @@
-import MsgTypes from "./message.js";
+import MsgTypes from "./message";
 import { logger } from './logger';
 import { cacheBackend } from './cache_backend';
+import { ensureStr, ensureStr2, ensureInt, ensureIntOrNeg, ab2str } from "./utils";
 
 // global zbox and repo object
 let zbox = null;
@@ -25,20 +26,6 @@ function appendCacheTypeToUri(uri) {
   return uri;
 }
 
-// ensure one parameter is string
-function ensureStr(s) {
-  if (typeof s !== 'string') {
-    throw 'Wrong argument';
-  }
-}
-
-// ensure two parameters are string
-function ensureStr2(s, s2) {
-  if (typeof s !== 'string' || typeof s2 !== 'string') {
-    throw 'Wrong argument';
-  }
-}
-
 function zboxMsgHandler(msg, msgTypes) {
   switch (msg.type) {
     case msgTypes.initEnv: {
@@ -55,6 +42,7 @@ function zboxMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.exists: {
+      ensureStr(msg.params.uri);
       zbox.Repo.exists(appendCacheTypeToUri(msg.params.uri));
       postMessage(msg);
       break;
@@ -64,6 +52,8 @@ function zboxMsgHandler(msg, msgTypes) {
       // load local cache backend and then open repo
       cacheBackend.open()
         .then(() => {
+          ensureStr2(msg.params.uri, msg.params.pwd);
+
           // create and config opener
           let opener = new zbox.RepoOpener();
           let opts = msg.params.opts || {};
@@ -109,10 +99,12 @@ function repoMsgHandler(msg, msgTypes) {
   switch (msg.type) {
     case msgTypes.close: {
       let cnt = Object.keys(opened.files).length;
-      if (cnt > 0) { logger.warn(`${cnt} file(s) still opened`); }
+      if (cnt > 0) {
+        logger.warn(`${cnt} file(s) still opened when close repo`);
+      }
       cnt = Object.keys(opened.vrdrs).length;
       if (cnt > 0) {
-        logger.warn(`${cnt} version reader(s) still opened`);
+        logger.warn(`${cnt} version reader(s) still opened when close repo`);
       }
       repo.close();
       cacheBackend.close()
@@ -164,6 +156,8 @@ function repoMsgHandler(msg, msgTypes) {
       if (typeof msg.params === 'string') {
         file = repo.openFile(msg.params);
       } else if (typeof msg.params === 'object') {
+        ensureStr(msg.params.path);
+
         let opener = new zbox.OpenOptions();
         let opts = msg.params.opts || {};
         if (opts.hasOwnProperty('read')) opener.read(opts.read);
@@ -174,7 +168,9 @@ function repoMsgHandler(msg, msgTypes) {
         if (opts.hasOwnProperty('createNew')) opener.createNew(opts.createNew);
         if (opts.hasOwnProperty('versionLimit')) opener.versionLimit(opts.versionLimit);
         if (opts.hasOwnProperty('dedupChunk')) opener.dedupChunk(opts.dedupChunk);
+
         file = opener.open(repo, msg.params.path);
+
       } else {
         throw 'Wrong argument';
       }
@@ -254,7 +250,7 @@ function fileMsgHandler(msg, msgTypes) {
   let file = opened.files[msg.object];
 
   if (file === undefined) {
-    throw 'File is closed';
+    throw 'File not opened';
   }
 
   // data bytes transfer buffer
@@ -282,6 +278,12 @@ function fileMsgHandler(msg, msgTypes) {
       break;
     }
 
+    case msgTypes.readAllString: {
+      let dst = file.readAll();
+      msg.result = ab2str(dst.buffer);
+      break;
+    }
+
     case msgTypes.write: {
       const buf = new Uint8Array(msg.params);
       msg.result = file.write(buf);
@@ -294,29 +296,26 @@ function fileMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.writeOnce: {
-      msg.result = file.writeOnce(msg.params);
+      const buf = new Uint8Array(msg.params);
+      msg.result = file.writeOnce(buf);
       break;
     }
 
     case msgTypes.seek: {
+      ensureInt(msg.params.from);
+      ensureIntOrNeg(msg.params.offset);
       msg.result = file.seek(msg.params.from, msg.params.offset);
       break;
     }
 
     case msgTypes.setLen: {
+      ensureInt(msg.params);
       file.setLen(msg.params);
       break;
     }
 
     case msgTypes.currVersion: {
       msg.result = file.currVersion();
-      break;
-    }
-
-    case msgTypes.versionReader: {
-      const vrdr = file.versionReader(msg.params);
-      opened.vrdrs[vrdr.ptr] = vrdr;
-      msg.result = vrdr.ptr;
       break;
     }
 
@@ -327,6 +326,14 @@ function fileMsgHandler(msg, msgTypes) {
 
     case msgTypes.history: {
       msg.result = file.history();
+      break;
+    }
+
+    case msgTypes.versionReader: {
+      ensureInt(msg.params);
+      const vrdr = file.versionReader(msg.params);
+      opened.vrdrs[vrdr.ptr] = vrdr;
+      msg.result = vrdr.ptr;
       break;
     }
   }
@@ -371,7 +378,15 @@ function versionReaderMsgHandler(msg, msgTypes) {
       break;
     }
 
+    case msgTypes.readAllString: {
+      let dst = file.readAll();
+      msg.result = ab2str(dst.buffer);
+      break;
+    }
+
     case msgTypes.seek: {
+      ensureInt(msg.params.from);
+      ensureIntOrNeg(msg.params.offset);
       msg.result = vrdr.seek(msg.params.from, msg.params.offset);
       break;
     }
@@ -387,7 +402,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
   let msg = event.data;
-  console.log(`main -> worker: ${JSON.stringify(msg)}`);
+  //console.log(`main -> worker: ${JSON.stringify(msg)}`);
 
   // reset message result and error
   msg.result = null;

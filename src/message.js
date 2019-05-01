@@ -32,20 +32,22 @@ const MsgTypes = {
     close: 'close',
     read: 'read',
     readAll: 'readAll',
+    readAllString: 'readAllString',
     write: 'write',
     finish: 'finish',
     writeOnce: 'writeOnce',
     seek: 'seek',
     setLen: 'setLen',
     currVersion: 'currVersion',
-    versionReader: 'versionReader',
     metadata: 'metadata',
-    history: 'history'
+    history: 'history',
+    versionReader: 'versionReader'
   },
   versionReader: {
     close: 'close',
     read: 'read',
     readAll: 'readAll',
+    readAllString: 'readAllString',
     seek: 'seek'
   }
 };

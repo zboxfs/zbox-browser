@@ -1,44 +1,11 @@
-//console.log(Zbox);
-
-async function run() {
-    let result;
-
-    try {
-        await zbox.init({ logging: true });
-
-        let repo = await zbox.open({ uri, pwd, opts: {
-            create: false
-        }});
-
-        /*let file = await repo.openFile({
-            path: "/file3",
-            opts: { create: true }
-        });
-        let buf = new Uint8Array([44, 55, 66]);
-        await file.writeOnce(buf);
-        await file.close();*/
-
-        //let file2 = await repo.openFile("/file");
-        //let newPos = await file.seek({ from: SeekFrom.START, offset: 1 });
-        //console.log(newPos);
-        //let dst = new Uint8Array(2);
-        //let result = await file.read(dst);
-        //let result = await file2.readAll();
-        //await file2.close();
-        //console.log(`file2 closed`);
-
-        let dirs = await repo.readDir("/");
-        console.log(dirs);
-
-        await repo.close();
-
-        zbox.exit();
-        console.log(`zbox worker exited`);
-
-    } catch (err) {
-        console.error(`${err}`);
-    }
+if (typeof Zbox === 'undefined') {
+  throw 'Zbox not loaded';
 }
+
+const TIMEOUT = 60 * 1000;
+
+const uri = "zbox://3Qe3SNZ3Pe7PrkHP2UzmVgXn@Cn3yz3rgnsG4SY?cache_size=1mb";
+const pwd = "pwd";
 
 // expect error promise
 async function expectError(promise) {
@@ -49,11 +16,6 @@ async function expectError(promise) {
     expect(err).to.be.an('error');
   }
 }
-
-const TIMEOUT = 60 * 1000;
-
-const uri = "zbox://3Qe3SNZ3Pe7PrkHP2UzmVgXn@Cn3yz3rgnsG4SY?cache_size=1mb";
-const pwd = "pwd";
 
 describe('Repo Open/Close Test', function() {
   let zbox, repo;
@@ -82,6 +44,7 @@ describe('Repo Open/Close Test', function() {
     await expectError(zbox.openRepo({ uri: "wrong uri", pwd }));
     await expectError(zbox.openRepo({ uri: "wrong_storage://", pwd }));
     await expectError(zbox.openRepo({ uri: "zbox://wrong_repo", pwd }));
+    await expectError(zbox.openRepo({ uri: 123, pwd: 456 }));
   });
 
   it('should not open repo with wrong password', async function() {
@@ -117,19 +80,23 @@ describe('Repo Open/Close Test', function() {
 });
 
 describe('File IO Test', function() {
-  let zbox, repo, filePath = `/${Date.now()}`;
+  let zbox, repo, filePath;
   const buf = new Uint8Array([1, 2, 3]);
   const buf2 = new Uint8Array([4, 5, 6]);
 
   this.timeout(TIMEOUT);
 
   before(async function() {
+    filePath = `/${Date.now()}`;
     zbox = new Zbox.Zbox();
     await zbox.initEnv({ debug: true });
-    repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
+    repo = await zbox.openRepo({ uri, pwd, opts: {
+      create: true,
+      versionLimit: 5
+    }});
   });
 
-  it(`should create empty file ${filePath}`, async function() {
+  it(`should create empty file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { create: true } });
     expect(file).to.be.an('object');
     await file.close();
@@ -137,7 +104,7 @@ describe('File IO Test', function() {
     expect(result).to.be.true;
   });
 
-  it(`should read empty file ${filePath}`, async function() {
+  it(`should read empty file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let result = await file.readAll();
     expect(result).to.be.an('uint8array');
@@ -145,13 +112,27 @@ describe('File IO Test', function() {
     await file.close();
   });
 
-  it(`should write to file ${filePath}`, async function() {
+  it(`should write to file in all`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
-    await file.writeOnce(buf);
+    await file.writeOnce(buf.slice());
     await file.close();
   });
 
-  it(`should read file ${filePath}`, async function() {
+  it(`should read file in parts`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let dst = new Uint8Array(2), dst2 = new Uint8Array(2);
+    let result = await file.read(dst);
+    expect(result).to.be.an('object');
+    expect(result.read).to.equal(2);
+    expect(result.data).to.eql(new Uint8Array([1, 2]));
+    result = await file.read(dst2);
+    expect(result).to.be.an('object');
+    expect(result.read).to.equal(1);
+    expect(result.data).to.eql(new Uint8Array([3]));
+    await file.close();
+  });
+
+  it(`should read file in all`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let result = await file.readAll();
     expect(result).to.be.an('uint8array');
@@ -159,17 +140,145 @@ describe('File IO Test', function() {
     await file.close();
   });
 
-  it(`should write to file ${filePath} again`, async function() {
+  it(`should write to file in parts again`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
-    await file.writeOnce(buf2);
+    let result = await file.write(buf2.slice(0, 2));
+    expect(result).to.equal(2);
+    result = await file.write(buf2.slice(2));
+    expect(result).to.equal(1);
+    await file.finish();
     await file.close();
   });
 
-  it(`should read file ${filePath} again`, async function() {
+  it(`should read file all again`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let result = await file.readAll();
     expect(result).to.be.an('uint8array');
     expect(result).to.eql(buf2);
+    await file.close();
+  });
+
+  it(`should get current version of`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let ver = await file.currVersion();
+    expect(ver).to.equal(3);
+    await file.close();
+  });
+
+  it(`should get metadata of`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let md = await file.metadata();
+    expect(md).to.be.an('object');
+    expect(md.fileType).to.equal('File');
+    expect(md.contentLen).to.equal(3);
+    expect(md.currVersion).to.equal(3);
+    expect(md.createdAt).to.be.a('number');
+    expect(md.modifiedAt).to.be.a('number');
+    await file.close();
+  });
+
+  it(`should get history of`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let hist = await file.history();
+    expect(hist).to.be.an('array');
+    expect(hist.length).to.equal(3);
+    expect(hist[2].num).to.equal(3);
+    expect(hist[2].contentLen).to.equal(3);
+    expect(hist[2].createdAt).to.be.a('number');
+    await file.close();
+  });
+
+  it(`should able to read current versions of`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let ver = await file.currVersion();
+    expect(ver).to.equal(3);
+
+    let vrdr = await file.versionReader(ver);
+    let result = await vrdr.readAll();
+    expect(result).to.be.an('uint8array');
+    expect(result).to.eql(buf2);
+    await vrdr.close();
+
+    await file.close();
+  });
+
+  it(`should able to read previous versions of`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let ver = await file.currVersion();
+    expect(ver).to.equal(3);
+
+    let dst = new Uint8Array(2), dst2 = new Uint8Array(2);
+    let vrdr = await file.versionReader(ver - 1);
+
+    let result = await vrdr.read(dst);
+    expect(result).to.be.an('object');
+    expect(result.read).to.equal(2);
+    expect(result.data).to.eql(new Uint8Array([1, 2]));
+    result = await vrdr.read(dst2);
+    expect(result).to.be.an('object');
+    expect(result.read).to.equal(1);
+    expect(result.data).to.eql(new Uint8Array([3]));
+    await vrdr.close();
+
+    await file.close();
+  });
+
+  it(`should able to seek in file`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { write: true } });
+    let newPos = await file.seek({ from: Zbox.SeekFrom.START, offset: 1 });
+    expect(newPos).to.equal(1);
+    newPos = await file.seek({ from: Zbox.SeekFrom.START, offset: 2 });
+    expect(newPos).to.equal(2);
+    newPos = await file.seek({ from: Zbox.SeekFrom.END, offset: -2 });
+    expect(newPos).to.equal(1);
+    newPos = await file.seek({ from: Zbox.SeekFrom.CURRENT, offset: 1 });
+    expect(newPos).to.equal(2);
+    await file.close();
+  });
+
+  it(`should write to file at offset 1`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { write: true } });
+
+    await file.seek({ from: Zbox.SeekFrom.START, offset: 1 });
+    await file.writeOnce(buf);
+
+    // read new file content from start
+    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    let result = await file.readAll();
+    expect(result).to.eql(new Uint8Array([4, 1, 2, 3]));
+
+    await file.close();
+  });
+
+  it(`should able to truncate file length to 2`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { write: true } });
+    await file.setLen(2);
+    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    let result = await file.readAll();
+    expect(result).to.eql(new Uint8Array([4, 1]));
+    await file.close();
+  });
+
+  it(`should able to extend file length to 4`, async function() {
+    let file = await repo.openFile({ path: filePath, opts: { write: true } });
+    await file.setLen(4);
+    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    let result = await file.readAll();
+    expect(result).to.eql(new Uint8Array([4, 1, 0, 0]));
+    await file.close();
+  });
+
+  it(`should able to read and write string to file`, async function() {
+    const path = `/${Date.now()}`;
+    const str = 'foo bar';
+
+    let file = await repo.openFile({ path, opts: { create: true } });
+    await file.writeOnce(str);
+
+    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    let result = await file.readAllString();
+    expect(result).to.equal(str);
+
     await file.close();
   });
 
@@ -181,11 +290,13 @@ describe('File IO Test', function() {
 
 describe('Dir IO Test', function() {
   let zbox, repo;
-  let dirPath = `/${Date.now()}`, dirPath2 = `/1/2/3/${Date.now()}`;
+  let dirPath, dirPath2;
 
   this.timeout(TIMEOUT);
 
   before(async function() {
+    dirPath = `/${Date.now()}`;
+    dirPath2 = `/1/2/3/${Date.now()}`;
     zbox = new Zbox.Zbox();
     await zbox.initEnv({ debug: true });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
@@ -203,11 +314,17 @@ describe('Dir IO Test', function() {
     expect(result).to.be.false;
   });
 
+  it('should not read dir with wrong argument', async function() {
+    await expectError(repo.readDir(123));
+    await expectError(repo.readDir({}));
+    await expectError(repo.readDir([1,2,3]));
+  });
+
   it('should not create root dir', async function() {
     await expectError(repo.createDir("/"));
   });
 
-  it(`should create empty dir ${dirPath}`, async function() {
+  it(`should create empty dir`, async function() {
     await repo.createDir(dirPath);
     let result = await repo.isDir(dirPath);
     expect(result).to.be.true;
@@ -215,7 +332,7 @@ describe('Dir IO Test', function() {
     expect(result).to.be.false;
   });
 
-  it(`should read empty dir ${dirPath}`, async function() {
+  it(`should read empty dir`, async function() {
     let dirs = await repo.readDir(dirPath);
     expect(dirs).to.be.an('array');
     expect(dirs.length).to.equal(0);
@@ -226,7 +343,7 @@ describe('Dir IO Test', function() {
     expect(dirs.length).to.be.at.least(2);
   });
 
-  it(`should create dir ${dirPath2} recursively`, async function() {
+  it(`should create dir recursively`, async function() {
     await repo.createDirAll(dirPath2);
   });
 
@@ -288,14 +405,16 @@ describe('Dir IO Test', function() {
   });
 });
 
-describe.only('FS Test', function() {
+describe('FS Test', function() {
   let zbox, repo;
   const newPwd = 'newpwd';
-  let filePath = `/${Date.now()}`, dirPath = `/1/2/3/${Date.now()}`;
+  let filePath, dirPath;
 
   this.timeout(TIMEOUT);
 
   before(async function() {
+    filePath = `/${Date.now()}`;
+    dirPath = `/1/2/3/${Date.now()}`;
     zbox = new Zbox.Zbox();
     await zbox.initEnv({ debug: true });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: false }});
@@ -337,6 +456,13 @@ describe.only('FS Test', function() {
     expect(result).to.be.true;
     result = await repo.pathExists("/non-exists");
     expect(result).to.be.false;
+  });
+
+  it('should not check path with wrong argument', async function() {
+    await expectError(repo.pathExists(123));
+    await expectError(repo.pathExists([]));
+    await expectError(repo.pathExists({}));
+    await expectError(repo.pathExists(null));
   });
 
   it('should create file', async function() {

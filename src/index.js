@@ -1,4 +1,5 @@
-import MsgTypes from "./message.js";
+import MsgTypes from "./message";
+import { isString, isArrayBufferView, str2ab } from "./utils";
 
 // global context
 const ctx = {
@@ -14,12 +15,37 @@ class Base {
   // bind message resolver and post message to worker
   _bindMsg(msgType, object, params) {
     const self = this;
+
+    const msg = {
+      scope: self.scope,
+      type: msgType,
+      object, params
+    };
+
+    // deal with array buffer transfer
+    let hasArrayBuf = false;
+    if (msgType === 'read') {
+      if (!isArrayBufferView(params)) {
+        return Promise.reject('Wrong argument, Uint8Array required');
+      }
+      msg.params = params.buffer;
+      hasArrayBuf = true;
+    }
+    if (msgType === 'write' || msgType === 'writeOnce') {
+      if (isArrayBufferView(params)) {
+        msg.params = params.buffer;
+      } else if (isString(params)) {
+        msg.params = str2ab(params);
+      } else {
+        return Promise.reject('Wrong argument, Uint8Array or String required');
+      }
+      hasArrayBuf = true;
+    }
+
     return new Promise((resolve, reject) => {
       ctx.resolver.add(self.scope, msgType, resolve, reject);
-      const msg = { scope: self.scope, type: msgType, object, params };
-      if (msgType == 'read' || msgType == 'write') {
-        msg.params = params.buffer;
-        ctx.worker.postMessage(msg, [params.buffer]);
+      if (hasArrayBuf) {
+        ctx.worker.postMessage(msg, [msg.params]);
       } else {
         ctx.worker.postMessage(msg);
       }
@@ -79,7 +105,7 @@ class Resolver {
 
   resolve(event) {
     const msg = event.data;
-    console.log(`worker -> main: ${JSON.stringify(msg)}`);
+    //console.log(`worker -> main: ${JSON.stringify(msg)}`);
 
     if (msg.error) {
       const err = new Error(msg.error);
@@ -91,15 +117,16 @@ class Resolver {
     let result = msg.result;
 
     switch (msg.scope) {
-      case 'zbox':
+      case 'zbox': {
         switch (msg.type) {
           case msgTypes.openRepo:
             result = new Repo();
             break;
         }
         break;
+      }
 
-      case 'repo':
+      case 'repo': {
         switch (msg.type) {
           case msgTypes.openFile:
           case msgTypes.createFile:
@@ -107,11 +134,12 @@ class Resolver {
             break;
         }
         break;
+      }
 
-      case 'file':
+      case 'file': {
         switch (msg.type) {
           case msgTypes.read:
-            result.data = new Uint8Array(result.data);
+            result.data = new Uint8Array(result.data, 0, result.read);
             break;
 
           case msgTypes.readAll:
@@ -123,11 +151,12 @@ class Resolver {
             break;
         }
         break;
+      }
 
-      case 'versionReader':
+      case 'versionReader': {
         switch (msg.type) {
           case msgTypes.read:
-            result.data = new Uint8Array(result.data);
+            result.data = new Uint8Array(result.data, 0, result.read);
             break;
 
           case msgTypes.readAll:
@@ -135,6 +164,7 @@ class Resolver {
             break;
         }
         break;
+      }
     }
 
     this.map[msg.scope][msg.type].resolve(result);
