@@ -4,7 +4,7 @@ if (typeof Zbox === 'undefined') {
 
 const TIMEOUT = 60 * 1000;
 
-const uri = "zbox://3Qe3SNZ3Pe7PrkHP2UzmVgXn@Cn3yz3rgnsG4SY?cache_size=1mb";
+const uri = "zbox://3Qe3SNZ3Pe7PrkHP2UzmVgXn@Cn3yz3rgnsG4SY";
 const pwd = "pwd";
 
 // expect error promise
@@ -17,6 +17,9 @@ async function expectError(promise) {
   }
 }
 
+// ============================================
+// Repo Open/Close Test
+// ============================================
 describe('Repo Open/Close Test', function() {
   let zbox, repo;
 
@@ -53,7 +56,10 @@ describe('Repo Open/Close Test', function() {
   });
 
   it('should not open repo with wrong password', async function() {
+    await expectError(zbox.openRepo({ uri, pwd: null }));
+    await expectError(zbox.openRepo({ uri, pwd: "" }));
     await expectError(zbox.openRepo({ uri, pwd: "wrong pwd" }));
+    await expectError(zbox.openRepo({ uri, pwd: 123 }));
   });
 
   it('should not open repo with createNew flag', async function() {
@@ -69,22 +75,35 @@ describe('Repo Open/Close Test', function() {
     if (repo) await repo.close();
   });
 
-  it('should OK close repo twice', async function() {
+  it('should be OK to close repo twice', async function() {
     if (repo) await repo.close();
+  });
+
+  it('should open repo in read-only', async function() {
+    repo = await zbox.openRepo({ uri, pwd, opts: { readOnly: true }});
+    await expectError(repo.createFile('/foo'));
+    await repo.close();
+  });
+
+  it('should delete local cache', async function() {
+    await zbox.deleteLocalCache(uri);
   });
 
   it('should exit zbox worker', async function() {
     if (zbox) await zbox.exit();
   });
 
-  it('should not open repo again', async function() {
+  it('should not open repo again after exit', async function() {
     await expectError(zbox.openRepo({ uri, pwd, opts: { create: true }}));
   });
 
   after(async function() {});
 });
 
-describe('File IO Test', function() {
+// ============================================
+// File IO Test
+// ============================================
+describe.only('File IO Test', function() {
   let zbox, repo, filePath;
   const buf = new Uint8Array([1, 2, 3]);
   const buf2 = new Uint8Array([4, 5, 6]);
@@ -101,7 +120,14 @@ describe('File IO Test', function() {
     }});
   });
 
-  it(`should create empty file`, async function() {
+  it(`should not create file with wrong argument`, async function() {
+    await expectError(repo.openFile());
+    await expectError(repo.openFile(123));
+    await expectError(repo.openFile({}));
+    await expectError(repo.openFile({ opts: { create: true } }));
+  });
+
+  it.only(`should create empty file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { create: true } });
     expect(file).to.be.an('object');
     await file.close();
@@ -110,30 +136,25 @@ describe('File IO Test', function() {
   });
 
   it(`should read empty file`, async function() {
-    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let file = await repo.openFile(filePath);
     let result = await file.readAll();
     expect(result).to.be.an('uint8array');
     expect(result.length).to.be.equal(0);
     await file.close();
   });
 
-  it(`should write to file in all`, async function() {
+  it.only(`should write to file in all`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
     await file.writeOnce(buf.slice());
     await file.close();
   });
 
-  it(`should read file in parts`, async function() {
+  it.only(`should read file in parts`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
-    let dst = new Uint8Array(2), dst2 = new Uint8Array(2);
-    let result = await file.read(dst);
-    expect(result).to.be.an('object');
-    expect(result.read).to.equal(2);
-    expect(result.data).to.eql(new Uint8Array([1, 2]));
-    result = await file.read(dst2);
-    expect(result).to.be.an('object');
-    expect(result.read).to.equal(1);
-    expect(result.data).to.eql(new Uint8Array([3]));
+    let result = await file.read(new Uint8Array(2));
+    expect(result).to.eql(new Uint8Array([1, 2]));
+    result = await file.read(new Uint8Array(2));
+    expect(result).to.eql(new Uint8Array([3]));
     await file.close();
   });
 
@@ -212,17 +233,12 @@ describe('File IO Test', function() {
     let ver = await file.currVersion();
     expect(ver).to.equal(3);
 
-    let dst = new Uint8Array(2), dst2 = new Uint8Array(2);
     let vrdr = await file.versionReader(ver - 1);
 
-    let result = await vrdr.read(dst);
-    expect(result).to.be.an('object');
-    expect(result.read).to.equal(2);
-    expect(result.data).to.eql(new Uint8Array([1, 2]));
-    result = await vrdr.read(dst2);
-    expect(result).to.be.an('object');
-    expect(result.read).to.equal(1);
-    expect(result.data).to.eql(new Uint8Array([3]));
+    let result = await vrdr.read(new Uint8Array(2));
+    expect(result).to.eql(new Uint8Array([1, 2]));
+    result = await vrdr.read(new Uint8Array(2));
+    expect(result).to.eql(new Uint8Array([3]));
     await vrdr.close();
 
     await file.close();
@@ -287,12 +303,63 @@ describe('File IO Test', function() {
     await file.close();
   });
 
+  it.only(`should able to run API reference doc example #1`, async function() {
+    const buf = new Uint8Array([1, 2, 3, 4, 5, 6]);
+    const path = `/${Date.now()}`;
+    var file = await repo.createFile(path);
+    await file.writeOnce(buf.slice());
+
+    // read the first 2 bytes
+    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    var dst = await file.read(new Uint8Array(2));   // now dst is [1, 2]
+    expect(dst).to.eql(new Uint8Array([1, 2]));
+
+    // create a new version, now the file content is [1, 2, 7, 8, 5, 6]
+    await file.writeOnce(new Uint8Array([7, 8]));
+
+    // notice that reading is on the latest version
+    await file.seek({ from: Zbox.SeekFrom.CURRENT, offset: -2 });
+    dst = await file.read(dst);   // now dst is [7, 8]
+    expect(dst).to.eql(new Uint8Array([7, 8]));
+
+    await file.close();
+  });
+
+  it(`should able to run API reference doc example #2`, async function() {
+    const path = `/${Date.now()}`;
+
+    // create file and write 2 versions
+    var file = await repo.createFile(path);
+    await file.writeOnce('foo');
+    await file.writeOnce('bar');
+
+    // get latest version number
+    const currVer = await file.currVersion();
+
+    // create a version reader and read latest version of content
+    var vrdr = await file.versionReader(currVer);
+    var content = await vrdr.readAllString();    // now content is 'foobar'
+    expect(content).to.equal('foobar');
+    await vrdr.close();
+
+    // create another version reader and read previous version of content
+    vrdr = await file.versionReader(currVer - 1);
+    content = await vrdr.readAllString()    // now content is 'foo'
+    expect(content).to.equal('foo');
+    await vrdr.close();
+
+    await file.close();
+  });
+
   after(async function() {
     if (repo) await repo.close();
     if (zbox) await zbox.exit();
   });
 });
 
+// ============================================
+// Dir IO Test
+// ============================================
 describe('Dir IO Test', function() {
   let zbox, repo;
   let dirPath, dirPath2;
@@ -398,9 +465,9 @@ describe('Dir IO Test', function() {
     await expectError(repo.readDir('/1'));
 
     let result;
-    result = await repo.pathExists("/1/2");
+    result = await repo.pathExists('/1/2');
     expect(result).to.be.false;
-    result = await repo.pathExists("/1");
+    result = await repo.pathExists('/1');
     expect(result).to.be.false;
   });
 
@@ -410,6 +477,9 @@ describe('Dir IO Test', function() {
   });
 });
 
+// ============================================
+// FS Test
+// ============================================
 describe('FS Test', function() {
   let zbox, repo;
   const newPwd = 'newpwd';
@@ -426,7 +496,7 @@ describe('FS Test', function() {
   });
 
   it('should run repo.info() for root dir', async function() {
-    let info = await repo.info("/");
+    let info = await repo.info();
     expect(info).to.be.an('object');
     expect(info.volumeId).to.be.an('string');
     expect(info.version).to.be.an('string');

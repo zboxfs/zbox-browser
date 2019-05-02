@@ -6,7 +6,8 @@ const MsgTypes = {
     initEnv: 'initEnv',
     exists: 'exists',
     openRepo: 'openRepo',
-    repairSuperBlock: 'repairSuperBlock'
+    repairSuperBlock: 'repairSuperBlock',
+    deleteLocalCache: 'deleteLocalCache'
   },
   repo: {
     close: 'close',

@@ -15,6 +15,16 @@ let opened = {
   vrdrs: {}       // version readers
 };
 
+// find repo id in uri
+function findRepoIdInUri(uri) {
+  const search = /^zbox:\/\/\w+@(\w+)/.exec(uri);
+  if (!search) {
+    throw 'Invalid Uri';
+  }
+  const repoId = search[1];
+  return repoId;
+}
+
 // add wasm cache type paramter to uri
 function appendCacheTypeToUri(uri) {
   const cacheType = 'cache_type=browser';
@@ -49,10 +59,14 @@ function zboxMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.openRepo: {
+      ensureStr2(msg.params.uri, msg.params.pwd);
+
+      // find repo id in uri
+      const repoId = findRepoIdInUri(msg.params.uri);
+
       // load local cache backend and then open repo
-      cacheBackend.open()
+      cacheBackend.open(repoId)
         .then(() => {
-          ensureStr2(msg.params.uri, msg.params.pwd);
 
           // create and config opener
           let opener = new zbox.RepoOpener();
@@ -90,6 +104,20 @@ function zboxMsgHandler(msg, msgTypes) {
       zbox.Repo.repairSuperBlock(appendCacheTypeToUri(msg.params.uri),
           msg.params.pwd);
       postMessage(msg);
+      break;
+    }
+
+    case msgTypes.deleteLocalCache: {
+      ensureStr(msg.params);
+
+      // find repo id in uri
+      const repoId = findRepoIdInUri(msg.params);
+
+      // delete local cache backend
+      cacheBackend.destroy(repoId)
+        .catch(err => msg.error = err.toString())
+        .finally(() => postMessage(msg));
+
       break;
     }
   }
@@ -155,6 +183,7 @@ function repoMsgHandler(msg, msgTypes) {
 
       if (typeof msg.params === 'string') {
         file = repo.openFile(msg.params);
+
       } else if (typeof msg.params === 'object') {
         ensureStr(msg.params.path);
 
@@ -172,7 +201,7 @@ function repoMsgHandler(msg, msgTypes) {
         file = opener.open(repo, msg.params.path);
 
       } else {
-        throw 'Wrong argument';
+        throw 'Wrong argument, string or Object required';
       }
 
       opened.files[file.ptr] = file;
@@ -379,7 +408,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.readAllString: {
-      let dst = file.readAll();
+      let dst = vrdr.readAll();
       msg.result = ab2str(dst.buffer);
       break;
     }

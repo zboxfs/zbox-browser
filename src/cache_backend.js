@@ -1,13 +1,13 @@
 import { logger } from './logger';
 
-// local cache db and store name
+// local cache db name
 const LOCAL_CACHE_DB = 'zbox_local_cache';
-const LOCAL_CACHE_STORE = 'cache';
 
 // open cache backend database
-function openDb() {
+function openDb(storeName) {
   return new Promise((resolve, reject) => {
-    let req = indexedDB.open(LOCAL_CACHE_DB, 1);
+    const ver = Math.floor(Date.now() / 1000);
+    let req = indexedDB.open(LOCAL_CACHE_DB, ver);
 
     req.onerror = (event) => {
       reject('IndexedDB is forbidden to use');
@@ -15,8 +15,8 @@ function openDb() {
 
     req.onupgradeneeded = (event) => {
       let db = event.target.result;
-      if (!db.objectStoreNames.contains(LOCAL_CACHE_STORE)) {
-        db.createObjectStore(LOCAL_CACHE_STORE, {
+      if (!db.objectStoreNames.contains(storeName)) {
+        db.createObjectStore(storeName, {
           keyPath: 'relPath'
         });
       }
@@ -28,24 +28,51 @@ function openDb() {
   });
 }
 
+// delete store in database
+function deleteStore(storeName) {
+  return new Promise((resolve, reject) => {
+    const ver = Math.floor(Date.now() / 1000);
+    let req = indexedDB.open(LOCAL_CACHE_DB, ver);
+
+    req.onerror = (event) => {
+      reject('IndexedDB is forbidden to use');
+    };
+
+    req.onupgradeneeded = (event) => {
+      let db = event.target.result;
+      if (db.objectStoreNames.contains(storeName)) {
+        db.deleteObjectStore(storeName);
+      }
+    };
+
+    req.onsuccess = (event) => {
+      let db = event.target.result;
+      db.close();
+    };
+  });
+}
+
 // local cache backend
 class CacheBackend {
   constructor() {
     this.db = null;
+    this.storeName = null;
     this.map= new Map();
     this.dbClosed = true;
   }
 
-  open() {
+  open(storeName) {
     let self = this;
 
-    return openDb()
-      .then(db => self.db = db)
-      .then(() => {
+    return openDb(storeName)
+      .then(db => {
+        self.db = db;
+        self.storeName = storeName;
+
         return new Promise((resolve, reject) => {
           // load all items in local cache db into memory map
-          let req = self.db.transaction(LOCAL_CACHE_STORE, 'readwrite')
-            .objectStore(LOCAL_CACHE_STORE)
+          let req = self.db.transaction(storeName, 'readonly')
+            .objectStore(storeName)
             .getAll();
           req.onerror = (event) => {
             reject('Database error: ' + event.target.errorCode);
@@ -65,8 +92,9 @@ class CacheBackend {
 
   // immediate close database withouth saving data
   immediateClose() {
-    if (!self.dbClosed) {
+    if (!this.dbClosed) {
       this.db.close();
+      this.storeName = null;
       this.map.clear();
       this.dbClosed = true;
     }
@@ -80,7 +108,7 @@ class CacheBackend {
     }
 
     return new Promise((resolve, reject) => {
-      let tx = self.db.transaction(LOCAL_CACHE_STORE, 'readwrite');
+      let tx = self.db.transaction(self.storeName, 'readwrite');
 
       tx.onabort = (event) => {
         self.map.clear();
@@ -96,7 +124,7 @@ class CacheBackend {
         resolve();
       };
 
-      let store = tx.objectStore(LOCAL_CACHE_STORE);
+      let store = tx.objectStore(self.storeName);
 
       // clear all store then save all items from memory map
       store.clear();
@@ -127,12 +155,16 @@ class CacheBackend {
   clear() {
     this.map.clear();
 
-    let req = this.db.transaction(LOCAL_CACHE_STORE, "readwrite")
-      .objectStore(LOCAL_CACHE_STORE)
+    let req = this.db.transaction(this.storeName, "readwrite")
+      .objectStore(this.storeName)
       .clear();
     req.onerror = (event) => {
       logger.error('Clear local cache failed ' + event.target.errorCode);
     };
+  }
+
+  destroy(storeName) {
+    return deleteStore(storeName);
   }
 }
 

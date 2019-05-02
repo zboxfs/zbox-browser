@@ -139,7 +139,7 @@ class Resolver {
       case 'file': {
         switch (msg.type) {
           case msgTypes.read:
-            result.data = new Uint8Array(result.data, 0, result.read);
+            result = new Uint8Array(result.data, 0, result.read);
             break;
 
           case msgTypes.readAll:
@@ -156,7 +156,7 @@ class Resolver {
       case 'versionReader': {
         switch (msg.type) {
           case msgTypes.read:
-            result.data = new Uint8Array(result.data, 0, result.read);
+            result = new Uint8Array(result.data, 0, result.read);
             break;
 
           case msgTypes.readAll:
@@ -229,5 +229,6 @@ export class Zbox extends Base {
       ctx.worker.terminate();
       ctx.worker = null;
     }
+    return Promise.resolve();
   }
 }
