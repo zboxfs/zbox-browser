@@ -103,7 +103,7 @@ describe('Repo Open/Close Test', function() {
 // ============================================
 // File IO Test
 // ============================================
-describe.only('File IO Test', function() {
+describe('File IO Test', function() {
   let zbox, repo, filePath;
   const buf = new Uint8Array([1, 2, 3]);
   const buf2 = new Uint8Array([4, 5, 6]);
@@ -127,7 +127,7 @@ describe.only('File IO Test', function() {
     await expectError(repo.openFile({ opts: { create: true } }));
   });
 
-  it.only(`should create empty file`, async function() {
+  it(`should create empty file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { create: true } });
     expect(file).to.be.an('object');
     await file.close();
@@ -143,13 +143,13 @@ describe.only('File IO Test', function() {
     await file.close();
   });
 
-  it.only(`should write to file in all`, async function() {
+  it(`should write to file in all`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
     await file.writeOnce(buf.slice());
     await file.close();
   });
 
-  it.only(`should read file in parts`, async function() {
+  it(`should read file in parts`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let result = await file.read(new Uint8Array(2));
     expect(result).to.eql(new Uint8Array([1, 2]));
@@ -184,14 +184,14 @@ describe.only('File IO Test', function() {
     await file.close();
   });
 
-  it(`should get current version of`, async function() {
+  it(`should get current version of file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let ver = await file.currVersion();
     expect(ver).to.equal(3);
     await file.close();
   });
 
-  it(`should get metadata of`, async function() {
+  it(`should get metadata of file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let md = await file.metadata();
     expect(md).to.be.an('object');
@@ -203,7 +203,7 @@ describe.only('File IO Test', function() {
     await file.close();
   });
 
-  it(`should get history of`, async function() {
+  it(`should get history of file`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let hist = await file.history();
     expect(hist).to.be.an('array');
@@ -214,7 +214,7 @@ describe.only('File IO Test', function() {
     await file.close();
   });
 
-  it(`should able to read current versions of`, async function() {
+  it(`should able to read current versions`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let ver = await file.currVersion();
     expect(ver).to.equal(3);
@@ -228,17 +228,24 @@ describe.only('File IO Test', function() {
     await file.close();
   });
 
-  it(`should able to read previous versions of`, async function() {
+  it(`should able to read previous versions`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let ver = await file.currVersion();
     expect(ver).to.equal(3);
 
-    let vrdr = await file.versionReader(ver - 1);
+    var vrdr = await file.versionReader(ver - 1);
 
-    let result = await vrdr.read(new Uint8Array(2));
+    var result = await vrdr.read(new Uint8Array(2));
     expect(result).to.eql(new Uint8Array([1, 2]));
     result = await vrdr.read(new Uint8Array(2));
     expect(result).to.eql(new Uint8Array([3]));
+    await vrdr.close();
+
+    // test version reader seek
+    var vrdr = await file.versionReader(ver - 1);
+    await vrdr.seek({ from: Zbox.SeekFrom.START, offset: 1 });
+    result = await vrdr.readAll();
+    expect(result).to.eql(new Uint8Array([2, 3]));
     await vrdr.close();
 
     await file.close();
@@ -303,7 +310,7 @@ describe.only('File IO Test', function() {
     await file.close();
   });
 
-  it.only(`should able to run API reference doc example #1`, async function() {
+  it(`should able to run API reference doc example #1`, async function() {
     const buf = new Uint8Array([1, 2, 3, 4, 5, 6]);
     const path = `/${Date.now()}`;
     var file = await repo.createFile(path);

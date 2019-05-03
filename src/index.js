@@ -37,7 +37,7 @@ class Base {
       } else if (isString(params)) {
         msg.params = str2ab(params);
       } else {
-        return Promise.reject('Wrong argument, Uint8Array or String required');
+        return Promise.reject('Wrong argument, Uint8Array or string required');
       }
       hasArrayBuf = true;
     }
