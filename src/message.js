@@ -3,53 +3,208 @@
  */
 const MsgTypes = {
   zbox: {
-    initEnv: 'initEnv',
-    exists: 'exists',
-    openRepo: 'openRepo',
-    repairSuperBlock: 'repairSuperBlock',
-    deleteLocalCache: 'deleteLocalCache'
+    initEnv: {
+      name: 'initEnv',
+      arg: [{ debug: { type: 'boolean', optional: true } }],
+      optional: true
+    },
+    exists: {
+      name: 'exists',
+      arg: ['string']
+    },
+    openRepo: {
+      name: 'openRepo',
+      arg: [{
+        uri: { type: 'string' },
+        pwd: { type: 'string' },
+        opts: { type: 'object', optional: true }
+      }]
+    },
+    repairSuperBlock: {
+      name: 'repairSuperBlock',
+      arg: [{
+        uri: { type: 'string' },
+        pwd: { type: 'string' }
+      }]
+    },
+    deleteLocalCache: {
+      name: 'deleteLocalCache',
+      arg: ['string']
+    }
   },
+
   repo: {
-    close: 'close',
-    info: 'info',
-    resetPassword: 'resetPassword',
-    pathExists: 'pathExists',
-    isFile: 'isFile',
-    isDir: 'isDir',
-    createFile: 'createFile',
-    openFile: 'openFile',
-    createDir: 'createDir',
-    createDirAll: 'createDirAll',
-    readDir: 'readDir',
-    metadata: 'metadata',
-    history: 'history',
-    copy: 'copy',
-    removeFile: 'removeFile',
-    removeDir: 'removeDir',
-    removeDirAll: 'removeDirAll',
-    rename: 'rename'
+    close: {
+      name: 'close',
+      arg: []
+    },
+    info: {
+      name: 'info',
+      arg: []
+    },
+    resetPassword: {
+      name: 'resetPassword',
+      arg: [
+        { oldPwd: { type: 'string' } },
+        { newPwd: { type: 'string' } }
+      ]
+    },
+    pathExists: {
+      name: 'pathExists',
+      arg: ['string']
+    },
+    isFile: {
+      name: 'isFile',
+      arg: ['string']
+    },
+    isDir: {
+      name: 'isDir',
+      arg: ['string']
+    },
+    createFile: {
+      name: 'createFile',
+      arg: ['string']
+    },
+    openFile: {
+      name: 'openFile',
+      arg: [
+        'string',
+        {
+          path: { type: 'boolean' },
+          opts: { type: 'object', optional: true }
+        }
+      ]
+    },
+    createDir: {
+      name: 'createDir',
+      arg: ['string']
+    },
+    createDirAll: {
+      name: 'createDirAll',
+      arg: ['string']
+    },
+    readDir: {
+      name: 'readDir',
+      arg: ['string']
+    },
+    metadata: {
+      name: 'metadata',
+      arg: ['string']
+    },
+    history: {
+      name: 'history',
+      arg: ['string']
+    },
+    copy: {
+      name: 'copy',
+      arg: [
+        { from: { type: 'string' } },
+        { to: { type: 'string' } }
+      ]
+    },
+    removeFile: {
+      name: 'removeFile',
+      arg: ['string']
+    },
+    removeDir: {
+      name: 'removeDir',
+      arg: ['string']
+    },
+    removeDirAll: {
+      name: 'removeDirAll',
+      arg: ['string']
+    },
+    rename: {
+      name: 'rename',
+      arg: [
+        { from: { type: 'string' } },
+        { to: { type: 'string' } }
+      ]
+    }
   },
+
   file: {
-    close: 'close',
-    read: 'read',
-    readAll: 'readAll',
-    readAllString: 'readAllString',
-    write: 'write',
-    finish: 'finish',
-    writeOnce: 'writeOnce',
-    seek: 'seek',
-    setLen: 'setLen',
-    currVersion: 'currVersion',
-    metadata: 'metadata',
-    history: 'history',
-    versionReader: 'versionReader'
+    close: {
+      name: 'close',
+      arg: []
+    },
+    read: {
+      name: 'read',
+      arg: ['buffer']
+    },
+    readAll: {
+      name: 'readAll',
+      arg: []
+    },
+    readAllString: {
+      name: 'readAllString',
+      arg: []
+    },
+    write: {
+      name: 'write',
+      arg: ['string', 'buffer']
+    },
+    finish: {
+      name: 'finish',
+      arg: []
+    },
+    writeOnce: {
+      name: 'writeOnce',
+      arg: ['string', 'buffer']
+    },
+    seek: {
+      name: 'seek',
+      arg: [ {
+        from: { type: 'number' },
+        offset: { type: 'number' }
+      }]
+    },
+    setLen: {
+      name: 'setLen',
+      arg: ['number']
+    },
+    currVersion: {
+      name: 'currVersion',
+      arg: []
+    },
+    metadata: {
+      name: 'metadata',
+      arg: []
+    },
+    history: {
+      name: 'history',
+      arg: []
+    },
+    versionReader: {
+      name: 'versionReader',
+      arg: ['number']
+    }
   },
+
   versionReader: {
-    close: 'close',
-    read: 'read',
-    readAll: 'readAll',
-    readAllString: 'readAllString',
-    seek: 'seek'
+    close: {
+      name: 'close',
+      arg: []
+    },
+    read: {
+      name: 'read',
+      arg: ['buffer']
+    },
+    readAll: {
+      name: 'readAll',
+      arg: []
+    },
+    readAllString: {
+      name: 'readAllString',
+      arg: []
+    },
+    seek: {
+      name: 'seek',
+      arg: [{
+        from: { type: 'number' },
+        offset: { type: 'number' }
+      }]
+    }
   }
 };
 

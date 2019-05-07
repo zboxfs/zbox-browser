@@ -43,6 +43,7 @@ function deleteStore(storeName) {
       if (db.objectStoreNames.contains(storeName)) {
         db.deleteObjectStore(storeName);
       }
+      resolve();
     };
 
     req.onsuccess = (event) => {

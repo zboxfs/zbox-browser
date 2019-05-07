@@ -1,7 +1,13 @@
 import MsgTypes from "./message";
 import { logger } from './logger';
 import { cacheBackend } from './cache_backend';
-import { ensureStr, ensureStr2, ensureInt, ensureIntOrNeg, ab2str } from "./utils";
+import {
+  ensureStr,
+  ensureStr2,
+  ensureInt,
+  ensureIntOrNeg,
+  ab2str
+} from "./utils";
 
 // global zbox and repo object
 let zbox = null;
@@ -15,8 +21,8 @@ let opened = {
   vrdrs: {}       // version readers
 };
 
-// find repo id in uri
-function findRepoIdInUri(uri) {
+// parse repo id in uri
+function parseRepoIdInUri(uri) {
   const search = /^zbox:\/\/\w+@(\w+)/.exec(uri);
   if (!search) {
     throw 'Invalid Uri';
@@ -25,20 +31,15 @@ function findRepoIdInUri(uri) {
   return repoId;
 }
 
-// add wasm cache type paramter to uri
-function appendCacheTypeToUri(uri) {
-  const cacheType = 'cache_type=browser';
-  if (uri.includes('cache_size')) {
-    uri += '&' + cacheType;
-  } else if (!uri.includes('?')) {
-    uri += '?' + cacheType;
-  }
-  return uri;
+// parse cache type in uri
+function parseCacheType(uri) {
+  const search = /^zbox:\/\/\w+@\w+\?.*cache_type=(\w+).*/.exec(uri);
+  return search ? search[1] : undefined;
 }
 
 function zboxMsgHandler(msg, msgTypes) {
   switch (msg.type) {
-    case msgTypes.initEnv: {
+    case msgTypes.initEnv.name: {
       let debugOn = msg.params ? msg.params.debug : false;
       logger.enable(debugOn);
       import('./wasm/zbox')
@@ -51,23 +52,29 @@ function zboxMsgHandler(msg, msgTypes) {
       break;
     }
 
-    case msgTypes.exists: {
+    case msgTypes.exists.name: {
       ensureStr(msg.params);
-      msg.result = zbox.Repo.exists(appendCacheTypeToUri(msg.params));
+      msg.result = zbox.Repo.exists(msg.params);
       postMessage(msg);
       break;
     }
 
-    case msgTypes.openRepo: {
+    case msgTypes.openRepo.name: {
       ensureStr2(msg.params.uri, msg.params.pwd);
 
       // find repo id in uri
-      const repoId = findRepoIdInUri(msg.params.uri);
+      const repoId = parseRepoIdInUri(msg.params.uri);
 
       // load local cache backend and then open repo
-      cacheBackend.open(repoId)
+      let loadCache;
+      if (parseCacheType(msg.params.uri) === 'mem') {
+        // no need to load cache for memory backend
+        loadCache = Promise.resolve();
+      } else {
+        loadCache = cacheBackend.open(repoId);
+      }
+      loadCache
         .then(() => {
-
           // create and config opener
           let opener = new zbox.RepoOpener();
           let opts = msg.params.opts || {};
@@ -85,10 +92,8 @@ function zboxMsgHandler(msg, msgTypes) {
           if (opts.hasOwnProperty('readOnly'))
             opener.readOnly(opts.readOnly);
 
-          let uri = appendCacheTypeToUri(msg.params.uri);
-
           // open zbox
-          repo = opener.open(uri, msg.params.pwd);
+          repo = opener.open(msg.params.uri, msg.params.pwd);
         })
         .catch(err => {
           msg.error = err.toString();
@@ -99,19 +104,19 @@ function zboxMsgHandler(msg, msgTypes) {
       break;
     }
 
-    case msgTypes.repairSuperBlock: {
+    case msgTypes.repairSuperBlock.name: {
       ensureStr2(msg.params.uri, msg.params.pwd);
-      zbox.Repo.repairSuperBlock(appendCacheTypeToUri(msg.params.uri),
+      zbox.Repo.repairSuperBlock(msg.params.uri,
           msg.params.pwd);
       postMessage(msg);
       break;
     }
 
-    case msgTypes.deleteLocalCache: {
+    case msgTypes.deleteLocalCache.name: {
       ensureStr(msg.params);
 
       // find repo id in uri
-      const repoId = findRepoIdInUri(msg.params);
+      const repoId = parseRepoIdInUri(msg.params);
 
       // delete local cache backend
       cacheBackend.destroy(repoId)
@@ -125,7 +130,7 @@ function zboxMsgHandler(msg, msgTypes) {
 
 function repoMsgHandler(msg, msgTypes) {
   switch (msg.type) {
-    case msgTypes.close: {
+    case msgTypes.close.name: {
       let cnt = Object.keys(opened.files).length;
       if (cnt > 0) {
         logger.warn(`${cnt} file(s) still opened when close repo`);
@@ -141,36 +146,36 @@ function repoMsgHandler(msg, msgTypes) {
       return;
     }
 
-    case msgTypes.info: {
+    case msgTypes.info.name: {
       msg.result = repo.info();
       break;
     }
 
-    case msgTypes.resetPassword: {
+    case msgTypes.resetPassword.name: {
       ensureStr2(msg.params.oldPwd, msg.params.newPwd);
       repo.resetPassword(msg.params.oldPwd, msg.params.newPwd);
       break;
     }
 
-    case msgTypes.pathExists: {
+    case msgTypes.pathExists.name: {
       ensureStr(msg.params);
       msg.result = repo.pathExists(msg.params);
       break;
     }
 
-    case msgTypes.isFile: {
+    case msgTypes.isFile.name: {
       ensureStr(msg.params);
       msg.result = repo.isFile(msg.params);
       break;
     }
 
-    case msgTypes.isDir: {
+    case msgTypes.isDir.name: {
       ensureStr(msg.params);
       msg.result = repo.isDir(msg.params);
       break;
     }
 
-    case msgTypes.createFile: {
+    case msgTypes.createFile.name: {
       ensureStr(msg.params);
       let file = repo.createFile(msg.params);
       opened.files[file.ptr] = file;
@@ -178,7 +183,7 @@ function repoMsgHandler(msg, msgTypes) {
       break;
     }
 
-    case msgTypes.openFile: {
+    case msgTypes.openFile.name: {
       let file;
 
       if (typeof msg.params === 'string') {
@@ -210,61 +215,61 @@ function repoMsgHandler(msg, msgTypes) {
       break;
     }
 
-    case msgTypes.createDir: {
+    case msgTypes.createDir.name: {
       ensureStr(msg.params);
       repo.createDir(msg.params);
       break;
     }
 
-    case msgTypes.createDirAll: {
+    case msgTypes.createDirAll.name: {
       ensureStr(msg.params);
       repo.createDirAll(msg.params);
       break;
     }
 
-    case msgTypes.readDir: {
+    case msgTypes.readDir.name: {
       ensureStr(msg.params);
       msg.result = repo.readDir(msg.params);
       break;
     }
 
-    case msgTypes.metadata: {
+    case msgTypes.metadata.name: {
       ensureStr(msg.params);
       msg.result = repo.metadata(msg.params);
       break;
     }
 
-    case msgTypes.history: {
+    case msgTypes.history.name: {
       ensureStr(msg.params);
       msg.result = repo.history(msg.params);
       break;
     }
 
-    case msgTypes.copy: {
+    case msgTypes.copy.name: {
       ensureStr2(msg.params.from, msg.params.to);
       repo.copy(msg.params.from, msg.params.to);
       break;
     }
 
-    case msgTypes.removeFile: {
+    case msgTypes.removeFile.name: {
       ensureStr(msg.params);
       repo.removeFile(msg.params);
       break;
     }
 
-    case msgTypes.removeDir: {
+    case msgTypes.removeDir.name: {
       ensureStr(msg.params);
       repo.removeDir(msg.params);
       break;
     }
 
-    case msgTypes.removeDirAll: {
+    case msgTypes.removeDirAll.name: {
       ensureStr(msg.params);
       repo.removeDirAll(msg.params);
       break;
     }
 
-    case msgTypes.rename: {
+    case msgTypes.rename.name: {
       ensureStr2(msg.params.from, msg.params.to);
       repo.rename(msg.params.from, msg.params.to);
       break;
@@ -286,13 +291,13 @@ function fileMsgHandler(msg, msgTypes) {
   let transBuf = null;
 
   switch (msg.type) {
-    case msgTypes.close: {
+    case msgTypes.close.name: {
       file.close();
       delete opened.files[msg.object];
       break;
     }
 
-    case msgTypes.read: {
+    case msgTypes.read.name: {
       let dst = new Uint8Array(msg.params);
       const read = file.read(dst);
       msg.result = { read, data: dst.buffer };
@@ -300,65 +305,65 @@ function fileMsgHandler(msg, msgTypes) {
       break;
     }
 
-    case msgTypes.readAll: {
+    case msgTypes.readAll.name: {
       let dst = file.readAll();
       msg.result = dst.buffer;
       transBuf = [dst.buffer];
       break;
     }
 
-    case msgTypes.readAllString: {
+    case msgTypes.readAllString.name: {
       let dst = file.readAll();
       msg.result = ab2str(dst.buffer);
       break;
     }
 
-    case msgTypes.write: {
+    case msgTypes.write.name: {
       const buf = new Uint8Array(msg.params);
       msg.result = file.write(buf);
       break;
     }
 
-    case msgTypes.finish: {
+    case msgTypes.finish.name: {
       file.finish();
       break;
     }
 
-    case msgTypes.writeOnce: {
+    case msgTypes.writeOnce.name: {
       const buf = new Uint8Array(msg.params);
       msg.result = file.writeOnce(buf);
       break;
     }
 
-    case msgTypes.seek: {
+    case msgTypes.seek.name: {
       ensureInt(msg.params.from);
       ensureIntOrNeg(msg.params.offset);
       msg.result = file.seek(msg.params.from, msg.params.offset);
       break;
     }
 
-    case msgTypes.setLen: {
+    case msgTypes.setLen.name: {
       ensureInt(msg.params);
       file.setLen(msg.params);
       break;
     }
 
-    case msgTypes.currVersion: {
+    case msgTypes.currVersion.name: {
       msg.result = file.currVersion();
       break;
     }
 
-    case msgTypes.metadata: {
+    case msgTypes.metadata.name: {
       msg.result = file.metadata();
       break;
     }
 
-    case msgTypes.history: {
+    case msgTypes.history.name: {
       msg.result = file.history();
       break;
     }
 
-    case msgTypes.versionReader: {
+    case msgTypes.versionReader.name: {
       ensureInt(msg.params);
       const vrdr = file.versionReader(msg.params);
       opened.vrdrs[vrdr.ptr] = vrdr;
@@ -386,13 +391,13 @@ function versionReaderMsgHandler(msg, msgTypes) {
   let transBuf = null;
 
   switch (msg.type) {
-    case msgTypes.close: {
+    case msgTypes.close.name: {
       vrdr.close();
       delete opened.vrdrs[msg.object];
       break;
     }
 
-    case msgTypes.read: {
+    case msgTypes.read.name: {
       let dst = new Uint8Array(msg.params);
       const read = vrdr.read(dst);
       msg.result = { read, data: dst.buffer };
@@ -400,20 +405,20 @@ function versionReaderMsgHandler(msg, msgTypes) {
       break;
     }
 
-    case msgTypes.readAll: {
+    case msgTypes.readAll.name: {
       let dst = vrdr.readAll();
       msg.result = dst.buffer;
       transBuf = [dst.buffer];
       break;
     }
 
-    case msgTypes.readAllString: {
+    case msgTypes.readAllString.name: {
       let dst = vrdr.readAll();
       msg.result = ab2str(dst.buffer);
       break;
     }
 
-    case msgTypes.seek: {
+    case msgTypes.seek.name: {
       ensureInt(msg.params.from);
       ensureIntOrNeg(msg.params.offset);
       msg.result = vrdr.seek(msg.params.from, msg.params.offset);
@@ -431,7 +436,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
   let msg = event.data;
-  //console.log(`main -> worker: ${JSON.stringify(msg)}`);
+  console.log(`main -> worker: ${JSON.stringify(msg)}`);
 
   // reset message result and error
   msg.result = null;

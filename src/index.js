@@ -1,11 +1,24 @@
 import MsgTypes from "./message";
-import { isString, isArrayBufferView, str2ab } from "./utils";
+import { isObject, isString, isArrayBufferView, str2ab } from "./utils";
 
 // global context
 const ctx = {
   resolver: null,
   worker: null
 };
+
+function getParamsType(params) {
+  if (isString(params)) {
+    return 'string';
+  } else if (isObject(params)) {
+    return 'object';
+  } else if (isArrayBufferView(params)) {
+    return 'buffer';
+  } else if (params === undefined) {
+    return 'undefined'
+  }
+  return 'other';
+}
 
 class Base {
   constructor(scope) {
@@ -14,33 +27,53 @@ class Base {
 
   // bind message resolver and post message to worker
   _bindMsg(msgType, object, params) {
-    const self = this;
-
     const msg = {
-      scope: self.scope,
+      scope: this.scope,
       type: msgType,
-      object, params
+      object,
+      params
     };
+
+    // check parameters type
+    const paramsType = getParamsType(params);
+    const arg = MsgTypes[this.scope][msgType].arg;
+    const argIsOptional = MsgTypes[this.scope][msgType].optional;
+    const decl = arg.find(arg => {
+      const argType = isObject(arg) ? 'object' : arg;
+      return paramsType === argType;
+    });
+    if (decl === undefined && arg.length > 0 && !argIsOptional) {
+      return Promise.reject(new Error('Wrong argument'));
+    }
+
+    // check required keys if params is object
+    if (paramsType === 'object' && isObject(decl)) {
+      const notMatched = Object.keys(decl).some(key => {
+        const required = !decl[key].optional;
+        return required && !params.hasOwnProperty(key);
+      });
+      if (notMatched) {
+        return Promise.reject(new Error('Wrong argument'));
+      }
+    }
 
     // deal with array buffer transfer
     let hasArrayBuf = false;
     if (msgType === 'read') {
-      if (!isArrayBufferView(params)) {
-        return Promise.reject('Wrong argument, Uint8Array required');
-      }
       msg.params = params.buffer;
       hasArrayBuf = true;
     }
     if (msgType === 'write' || msgType === 'writeOnce') {
-      if (isArrayBufferView(params)) {
-        msg.params = params.buffer;
-      } else if (isString(params)) {
+      if (paramsType === 'string') {
         msg.params = str2ab(params);
       } else {
-        return Promise.reject('Wrong argument, Uint8Array or string required');
+        // params must be an Uint8Array
+        msg.params = params.buffer;
       }
       hasArrayBuf = true;
     }
+
+    const self = this;
 
     return new Promise((resolve, reject) => {
       ctx.resolver.add(self.scope, msgType, resolve, reject);
@@ -105,7 +138,7 @@ class Resolver {
 
   resolve(event) {
     const msg = event.data;
-    //console.log(`worker -> main: ${JSON.stringify(msg)}`);
+    console.log(`worker -> main: ${JSON.stringify(msg)}`);
 
     if (msg.error) {
       const err = new Error(msg.error);
@@ -119,7 +152,7 @@ class Resolver {
     switch (msg.scope) {
       case 'zbox': {
         switch (msg.type) {
-          case msgTypes.openRepo:
+          case msgTypes.openRepo.name:
             result = new Repo();
             break;
         }
@@ -128,8 +161,8 @@ class Resolver {
 
       case 'repo': {
         switch (msg.type) {
-          case msgTypes.openFile:
-          case msgTypes.createFile:
+          case msgTypes.openFile.name:
+          case msgTypes.createFile.name:
             result = new File(result);
             break;
         }
@@ -138,15 +171,15 @@ class Resolver {
 
       case 'file': {
         switch (msg.type) {
-          case msgTypes.read:
+          case msgTypes.read.name:
             result = new Uint8Array(result.data, 0, result.read);
             break;
 
-          case msgTypes.readAll:
+          case msgTypes.readAll.name:
             result = new Uint8Array(result);
             break;
 
-          case msgTypes.versionReader:
+          case msgTypes.versionReader.name:
             result = new VersionReader(result);
             break;
         }
@@ -155,11 +188,11 @@ class Resolver {
 
       case 'versionReader': {
         switch (msg.type) {
-          case msgTypes.read:
+          case msgTypes.read.name:
             result = new Uint8Array(result.data, 0, result.read);
             break;
 
-          case msgTypes.readAll:
+          case msgTypes.readAll.name:
             result = new Uint8Array(result);
             break;
         }
@@ -191,12 +224,6 @@ const wasmSupported = (() => {
   return false;
 })();
 
-export const SeekFrom = {
-  START: 0,
-  END: 1,
-  CURRENT: 2
-};
-
 export class Zbox extends Base {
   constructor() {
     super('zbox');
@@ -222,6 +249,14 @@ export class Zbox extends Base {
     Object.keys(MsgTypes[this.scope]).forEach(msgType => {
       Zbox.prototype[msgType] = this._bindMsg.bind(this, msgType, null);
     });
+  }
+
+  static get SeekFrom() {
+    return {
+      START: 0,
+      END: 1,
+      CURRENT: 2
+    };
   }
 
   exit() {

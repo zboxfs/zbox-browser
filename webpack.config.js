@@ -8,7 +8,6 @@ const browserConfig = {
   output: {
     path: outputPath,
     filename: 'index.js',
-    library: 'Zbox',
     libraryTarget: 'umd'
   },
   devtool: 'source-map',

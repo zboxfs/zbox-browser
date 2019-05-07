@@ -1,3 +1,8 @@
+// check if it is object
+export function isObject(a) {
+  return a !== null && typeof a === 'object';
+}
+
 // check if it is string
 export function isString(s) {
   return typeof s === 'string';
@@ -25,14 +30,14 @@ export function str2ab(str) {
   return buf;
 }
 
-// ensure one parameter is string
+// ensure arg is string
 export function ensureStr(s) {
   if (typeof s !== 'string') {
     throw 'Wrong argument, string required';
   }
 }
 
-// ensure two parameters are string
+// ensure two args are string
 export function ensureStr2(s, s2) {
   if (typeof s !== 'string' || typeof s2 !== 'string') {
     throw 'Wrong argument, string required';
