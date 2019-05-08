@@ -3,6 +3,11 @@ export function isObject(a) {
   return a !== null && typeof a === 'object';
 }
 
+// check if it is number
+export function isNumber(n) {
+  return typeof n === 'number';
+}
+
 // check if it is string
 export function isString(s) {
   return typeof s === 'string';

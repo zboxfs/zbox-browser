@@ -1,5 +1,5 @@
 import MsgTypes from "./message";
-import { isObject, isString, isArrayBufferView, str2ab } from "./utils";
+import { isObject, isNumber, isString, isArrayBufferView, str2ab } from "./utils";
 
 // global context
 const ctx = {
@@ -10,10 +10,14 @@ const ctx = {
 function getParamsType(params) {
   if (isString(params)) {
     return 'string';
-  } else if (isObject(params)) {
-    return 'object';
+  } else if (isNumber(params)) {
+    return 'number';
   } else if (isArrayBufferView(params)) {
     return 'buffer';
+  } else if (params instanceof ArrayBuffer) {
+    return 'buffer';
+  } else if (isObject(params)) {
+    return 'object';
   } else if (params === undefined) {
     return 'undefined'
   }
@@ -58,30 +62,28 @@ class Base {
     }
 
     // deal with array buffer transfer
-    let hasArrayBuf = false;
-    if (msgType === 'read') {
-      msg.params = params.buffer;
-      hasArrayBuf = true;
-    }
-    if (msgType === 'write' || msgType === 'writeOnce') {
+    let transBuf = undefined;
+    if (msgType === 'read' || msgType === 'write' || msgType === 'writeOnce') {
+      let buf = params.buffer || params;
+
       if (paramsType === 'string') {
-        msg.params = str2ab(params);
-      } else {
-        // params must be an Uint8Array
-        msg.params = params.buffer;
+        buf = str2ab(params);
       }
-      hasArrayBuf = true;
+
+      msg.params = {
+        buf,
+        offset: params.byteOffset || 0,
+        len: params.byteLength
+      };
+
+      transBuf = [buf];
     }
 
     const self = this;
 
     return new Promise((resolve, reject) => {
       ctx.resolver.add(self.scope, msgType, resolve, reject);
-      if (hasArrayBuf) {
-        ctx.worker.postMessage(msg, [msg.params]);
-      } else {
-        ctx.worker.postMessage(msg);
-      }
+      ctx.worker.postMessage(msg, transBuf);
     });
   }
 }
@@ -172,7 +174,7 @@ class Resolver {
       case 'file': {
         switch (msg.type) {
           case msgTypes.read.name:
-            result = new Uint8Array(result.data, 0, result.read);
+            result = new Uint8Array(result.buf, result.offset, result.len);
             break;
 
           case msgTypes.readAll.name:
@@ -189,7 +191,7 @@ class Resolver {
       case 'versionReader': {
         switch (msg.type) {
           case msgTypes.read.name:
-            result = new Uint8Array(result.data, 0, result.read);
+            result = new Uint8Array(result.buf, result.offset, result.len);
             break;
 
           case msgTypes.readAll.name:
@@ -253,9 +255,9 @@ export class Zbox extends Base {
 
   static get SeekFrom() {
     return {
-      START: 0,
-      END: 1,
-      CURRENT: 2
+      Start: 0,
+      End: 1,
+      Current: 2
     };
   }
 

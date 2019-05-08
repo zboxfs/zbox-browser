@@ -2,6 +2,8 @@ import MsgTypes from "./message";
 import { logger } from './logger';
 import { cacheBackend } from './cache_backend';
 import {
+  isString,
+  isObject,
   ensureStr,
   ensureStr2,
   ensureInt,
@@ -111,20 +113,6 @@ function zboxMsgHandler(msg, msgTypes) {
       postMessage(msg);
       break;
     }
-
-    case msgTypes.deleteLocalCache.name: {
-      ensureStr(msg.params);
-
-      // find repo id in uri
-      const repoId = parseRepoIdInUri(msg.params);
-
-      // delete local cache backend
-      cacheBackend.destroy(repoId)
-        .catch(err => msg.error = err.toString())
-        .finally(() => postMessage(msg));
-
-      break;
-    }
   }
 }
 
@@ -186,10 +174,10 @@ function repoMsgHandler(msg, msgTypes) {
     case msgTypes.openFile.name: {
       let file;
 
-      if (typeof msg.params === 'string') {
+      if (isString(msg.params)) {
         file = repo.openFile(msg.params);
 
-      } else if (typeof msg.params === 'object') {
+      } else if (isObject(msg.params)) {
         ensureStr(msg.params.path);
 
         let opener = new zbox.OpenOptions();
@@ -298,10 +286,14 @@ function fileMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.read.name: {
-      let dst = new Uint8Array(msg.params);
-      const read = file.read(dst);
-      msg.result = { read, data: dst.buffer };
-      transBuf = [dst.buffer];
+      let buf = new Uint8Array(msg.params.buf, msg.params.offset, msg.params.len);
+      const read = file.read(buf);
+      msg.result = {
+        buf: msg.params.buf,
+        offset: msg.params.offset,
+        len: read
+      };
+      transBuf = [msg.params.buf];
       break;
     }
 
@@ -319,7 +311,7 @@ function fileMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.write.name: {
-      const buf = new Uint8Array(msg.params);
+      const buf = new Uint8Array(msg.params.buf, msg.params.offset, msg.params.len);
       msg.result = file.write(buf);
       break;
     }
@@ -330,7 +322,7 @@ function fileMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.writeOnce.name: {
-      const buf = new Uint8Array(msg.params);
+      const buf = new Uint8Array(msg.params.buf, msg.params.offset, msg.params.len);
       msg.result = file.writeOnce(buf);
       break;
     }
@@ -398,10 +390,14 @@ function versionReaderMsgHandler(msg, msgTypes) {
     }
 
     case msgTypes.read.name: {
-      let dst = new Uint8Array(msg.params);
-      const read = vrdr.read(dst);
-      msg.result = { read, data: dst.buffer };
-      transBuf = [dst.buffer];
+      let buf = new Uint8Array(msg.params.buf, msg.params.offset, msg.params.len);
+      const read = vrdr.read(buf);
+      msg.result = {
+        buf: msg.params.buf,
+        offset: msg.params.offset,
+        len: read
+      };
+      transBuf = [msg.params.buf];
       break;
     }
 

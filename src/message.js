@@ -26,10 +26,6 @@ const MsgTypes = {
         uri: { type: 'string' },
         pwd: { type: 'string' }
       }]
-    },
-    deleteLocalCache: {
-      name: 'deleteLocalCache',
-      arg: ['string']
     }
   },
 
