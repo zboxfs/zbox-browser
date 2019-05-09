@@ -1,11 +1,28 @@
-if (typeof Zbox === 'undefined') {
-  throw 'Zbox not loaded';
-}
+const isNodeJs = (typeof process !== 'undefined') && (process.release.name === 'node');
 
 const TIMEOUT = 60 * 1000;
 
-const uri = "zbox://3Qe3SNZ3Pe7PrkHP2UzmVgXn@Cn3yz3rgnsG4SY";
-const pwd = "pwd";
+let uri = 'zbox://U9aZMugEpMXHG6fvz2F4UjNC@RqYWCVCTc77kan';
+let uri2 = 'zbox://2c3kbfSqsKYpf36fKKc5YpEY@Rwt6Nh6xesE3n5'; // for Node.js
+const pwd = 'pwd';
+
+if (isNodeJs) {
+  uri += '?cache_type=file&base=./tt';
+} else {
+  uri += '?cache_type=browser';
+}
+
+var chai = chai || undefined;
+
+if (isNodeJs) {
+  chai = require('chai');
+  Zbox = require('../');
+}
+
+let expect = chai.expect;
+let assert = chai.assert;
+
+let zbox = new Zbox();
 
 // expect error promise
 async function expectError(promise) {
@@ -21,16 +38,36 @@ async function expectError(promise) {
 // Repo Open/Close Test
 // ============================================
 describe('Repo Open/Close Test', function() {
-  let zbox, repo;
+  let repo;
 
   this.timeout(TIMEOUT);
 
   before(function() {});
 
-  it('should create zbox object', async function() {
-    zbox = new Zbox.Zbox();
-    expect(zbox).to.be.an('object');
+  it('should init environment', async function() {
     await zbox.initEnv({ debug: true });
+  });
+
+  it('should not open repo with wrong argument', async function() {
+    await expectError(zbox.openRepo());
+    await expectError(zbox.openRepo(null));
+    await expectError(zbox.openRepo(undefined));
+    await expectError(zbox.openRepo(123));
+    await expectError(zbox.openRepo({}));
+    await expectError(zbox.openRepo({ uri }));
+    await expectError(zbox.openRepo({ pwd }));
+    await expectError(zbox.openRepo({ uri: "", pwd }));
+    await expectError(zbox.openRepo({ uri: 123, pwd: 456 }));
+    await expectError(zbox.openRepo({ uri: "wrong uri", pwd }));
+    await expectError(zbox.openRepo({ uri: "wrong_storage://", pwd }));
+    await expectError(zbox.openRepo({ uri: "zbox://wrong_repo", pwd }));
+    await expectError(zbox.openRepo({ uri: "zbox://foo@", pwd }));
+
+    if (isNodeJs) {
+      await expectError(zbox.openRepo({ uri: "zbox://foo@bar?cache_type=browser", pwd }));
+    } else {
+      await expectError(zbox.openRepo({ uri: "zbox://foo@bar?cache_type=file", pwd }));
+    }
   });
 
   it('should open repo', async function() {
@@ -45,14 +82,6 @@ describe('Repo Open/Close Test', function() {
   it('should check repo exists', async function() {
     const result = await zbox.exists(uri);
     expect(result).to.be.true;
-  });
-
-  it('should not open repo with wrong uri', async function() {
-    await expectError(zbox.openRepo({ uri: "", pwd }));
-    await expectError(zbox.openRepo({ uri: "wrong uri", pwd }));
-    await expectError(zbox.openRepo({ uri: "wrong_storage://", pwd }));
-    await expectError(zbox.openRepo({ uri: "zbox://wrong_repo", pwd }));
-    await expectError(zbox.openRepo({ uri: 123, pwd: 456 }));
   });
 
   it('should not open repo with wrong password', async function() {
@@ -79,17 +108,25 @@ describe('Repo Open/Close Test', function() {
     if (repo) await repo.close();
   });
 
+  it('should open repo with cryptos option (Node.js)', async function() {
+    if (!isNodeJs) return;
+
+    let repo2 = await zbox.openRepo({ uri: uri2, pwd, opts: {
+      create: true,
+      opsLimit: Zbox.OpsLimit.Moderate,
+      memLimit: Zbox.MemLimit.Moderate,
+      cipher: Zbox.Cipher.Aes
+    }});
+    if (repo2) await repo2.close();
+  });
+
   it('should open repo in read-only', async function() {
     repo = await zbox.openRepo({ uri, pwd, opts: { readOnly: true }});
     await expectError(repo.createFile('/foo'));
     await repo.close();
   });
 
-  it('should delete local cache', async function() {
-    await zbox.deleteLocalCache(uri);
-  });
-
-  it('should exit zbox worker', async function() {
+  it('should exit zbox', async function() {
     if (zbox) await zbox.exit();
   });
 
@@ -104,7 +141,7 @@ describe('Repo Open/Close Test', function() {
 // File IO Test
 // ============================================
 describe('File IO Test', function() {
-  let zbox, repo, filePath;
+  let repo, filePath;
   const buf = new Uint8Array([1, 2, 3]);
   const buf2 = new Uint8Array([4, 5, 6]);
 
@@ -112,7 +149,6 @@ describe('File IO Test', function() {
 
   before(async function() {
     filePath = `/${Date.now()}`;
-    zbox = new Zbox.Zbox();
     await zbox.initEnv({ debug: true });
     repo = await zbox.openRepo({ uri, pwd, opts: {
       create: true,
@@ -131,8 +167,10 @@ describe('File IO Test', function() {
     let file = await repo.openFile({ path: filePath, opts: { create: true } });
     expect(file).to.be.an('object');
     await file.close();
-    const result = await repo.isFile(filePath);
+    let result = await repo.isFile(filePath);
     expect(result).to.be.true;
+    result = await repo.isDir(filePath);
+    expect(result).to.be.false;
   });
 
   it(`should read empty file`, async function() {
@@ -151,35 +189,92 @@ describe('File IO Test', function() {
 
   it(`should read file in parts`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
-    let result = await file.read(new Uint8Array(2));
-    expect(result).to.eql(new Uint8Array([1, 2]));
-    result = await file.read(new Uint8Array(2));
-    expect(result).to.eql(new Uint8Array([3]));
+
+    if (isNodeJs) {
+      let result = await file.read(Buffer.from([0, 0]));
+      expect(Buffer.isBuffer(result)).to.be.true;
+      expect(result).to.eql(Buffer.from([1, 2]));
+      result = await file.read(new Uint8Array(2));
+      expect(result).to.eql(Buffer.from([3]));
+
+    } else {
+      let result = await file.read(new Uint8Array(2));
+      expect(result).to.eql(new Uint8Array([1, 2]));
+      result = await file.read((new Uint8Array(2)).buffer);
+      expect(result).to.eql(new Uint8Array([3]));
+    }
+
     await file.close();
   });
 
   it(`should read file in all`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let result = await file.readAll();
-    expect(result).to.be.an('uint8array');
+
+    if (isNodeJs) {
+      expect(Buffer.isBuffer(result)).to.be.true;
+    } else {
+      expect(result).to.be.an('uint8array');
+    }
     expect(result).to.eql(buf);
     await file.close();
   });
 
+  it(`should read as stream (Node.js)`, function(done) {
+    if (!isNodeJs) return;
+
+    let file;
+
+    repo.openFile({ path: filePath, opts: { read: true } })
+      .then(f => {
+        file = f;
+        return file.readStream();
+      })
+      .then(rdr => {
+        rdr.on('data', (chunk) => {
+          expect(Buffer.isBuffer(chunk)).to.be.true;
+          expect(chunk).to.eql(buf);
+        });
+        rdr.on('end', async () => {
+          await file.close();
+          done();
+        });
+        rdr.on('error', async (err) => {
+          await file.close();
+          done(err);
+        });
+      });
+  });
+
   it(`should write to file in parts again`, async function() {
+
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
-    let result = await file.write(buf2.slice(0, 2));
-    expect(result).to.equal(2);
-    result = await file.write(buf2.slice(2));
-    expect(result).to.equal(1);
+
+    if (isNodeJs) {
+      let result = await file.write(buf2.slice(0, 2));
+      expect(result).to.equal(2);
+      result = await file.write(Buffer.from(buf2.slice(2)));
+      expect(result).to.equal(1);
+    } else {
+      let result = await file.write(buf2.slice(0, 2));
+      expect(result).to.equal(2);
+      result = await file.write(new Uint8Array(buf2.buffer, 2).slice());
+      expect(result).to.equal(1);
+    }
+
     await file.finish();
     await file.close();
+
   });
 
   it(`should read file all again`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { read: true } });
     let result = await file.readAll();
-    expect(result).to.be.an('uint8array');
+    if (isNodeJs) {
+      expect(Buffer.isBuffer(result)).to.be.true;
+    } else {
+      expect(result).to.be.an('uint8array');
+    }
     expect(result).to.eql(buf2);
     await file.close();
   });
@@ -221,7 +316,11 @@ describe('File IO Test', function() {
 
     let vrdr = await file.versionReader(ver);
     let result = await vrdr.readAll();
-    expect(result).to.be.an('uint8array');
+    if (isNodeJs) {
+      expect(Buffer.isBuffer(result)).to.be.true;
+    } else {
+      expect(result).to.be.an('uint8array');
+    }
     expect(result).to.eql(buf2);
     await vrdr.close();
 
@@ -243,7 +342,7 @@ describe('File IO Test', function() {
 
     // test version reader seek
     var vrdr = await file.versionReader(ver - 1);
-    await vrdr.seek({ from: Zbox.SeekFrom.START, offset: 1 });
+    await vrdr.seek({ from: Zbox.SeekFrom.Start, offset: 1 });
     result = await vrdr.readAll();
     expect(result).to.eql(new Uint8Array([2, 3]));
     await vrdr.close();
@@ -252,14 +351,14 @@ describe('File IO Test', function() {
   });
 
   it(`should able to seek in file`, async function() {
-    let file = await repo.openFile({ path: filePath, opts: { write: true } });
-    let newPos = await file.seek({ from: Zbox.SeekFrom.START, offset: 1 });
+    let file = await repo.openFile({ path: filePath, opts: { read: true } });
+    let newPos = await file.seek({ from: Zbox.SeekFrom.Start, offset: 1 });
     expect(newPos).to.equal(1);
-    newPos = await file.seek({ from: Zbox.SeekFrom.START, offset: 2 });
+    newPos = await file.seek({ from: Zbox.SeekFrom.Start, offset: 2 });
     expect(newPos).to.equal(2);
-    newPos = await file.seek({ from: Zbox.SeekFrom.END, offset: -2 });
+    newPos = await file.seek({ from: Zbox.SeekFrom.End, offset: -2 });
     expect(newPos).to.equal(1);
-    newPos = await file.seek({ from: Zbox.SeekFrom.CURRENT, offset: 1 });
+    newPos = await file.seek({ from: Zbox.SeekFrom.Current, offset: 1 });
     expect(newPos).to.equal(2);
     await file.close();
   });
@@ -267,11 +366,11 @@ describe('File IO Test', function() {
   it(`should write to file at offset 1`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
 
-    await file.seek({ from: Zbox.SeekFrom.START, offset: 1 });
+    await file.seek({ from: Zbox.SeekFrom.Start, offset: 1 });
     await file.writeOnce(buf);
 
     // read new file content from start
-    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    await file.seek({ from: Zbox.SeekFrom.Start, offset: 0 });
     let result = await file.readAll();
     expect(result).to.eql(new Uint8Array([4, 1, 2, 3]));
 
@@ -281,7 +380,7 @@ describe('File IO Test', function() {
   it(`should able to truncate file length to 2`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
     await file.setLen(2);
-    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    await file.seek({ from: Zbox.SeekFrom.Start, offset: 0 });
     let result = await file.readAll();
     expect(result).to.eql(new Uint8Array([4, 1]));
     await file.close();
@@ -290,7 +389,7 @@ describe('File IO Test', function() {
   it(`should able to extend file length to 4`, async function() {
     let file = await repo.openFile({ path: filePath, opts: { write: true } });
     await file.setLen(4);
-    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    await file.seek({ from: Zbox.SeekFrom.Start, offset: 0 });
     let result = await file.readAll();
     expect(result).to.eql(new Uint8Array([4, 1, 0, 0]));
     await file.close();
@@ -303,7 +402,7 @@ describe('File IO Test', function() {
     let file = await repo.openFile({ path, opts: { create: true } });
     await file.writeOnce(str);
 
-    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    await file.seek({ from: Zbox.SeekFrom.Start, offset: 0 });
     let result = await file.readAllString();
     expect(result).to.equal(str);
 
@@ -317,7 +416,7 @@ describe('File IO Test', function() {
     await file.writeOnce(buf.slice());
 
     // read the first 2 bytes
-    await file.seek({ from: Zbox.SeekFrom.START, offset: 0 });
+    await file.seek({ from: Zbox.SeekFrom.Start, offset: 0 });
     var dst = await file.read(new Uint8Array(2));   // now dst is [1, 2]
     expect(dst).to.eql(new Uint8Array([1, 2]));
 
@@ -325,7 +424,7 @@ describe('File IO Test', function() {
     await file.writeOnce(new Uint8Array([7, 8]));
 
     // notice that reading is on the latest version
-    await file.seek({ from: Zbox.SeekFrom.CURRENT, offset: -2 });
+    await file.seek({ from: Zbox.SeekFrom.Current, offset: -2 });
     dst = await file.read(dst);   // now dst is [7, 8]
     expect(dst).to.eql(new Uint8Array([7, 8]));
 
@@ -368,15 +467,13 @@ describe('File IO Test', function() {
 // Dir IO Test
 // ============================================
 describe('Dir IO Test', function() {
-  let zbox, repo;
-  let dirPath, dirPath2;
+  let repo, dirPath, dirPath2;
 
   this.timeout(TIMEOUT);
 
   before(async function() {
     dirPath = `/${Date.now()}`;
     dirPath2 = `/1/2/3/${Date.now()}`;
-    zbox = new Zbox.Zbox();
     await zbox.initEnv({ debug: true });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
@@ -384,7 +481,6 @@ describe('Dir IO Test', function() {
   it('should read root dir', async function() {
     let dirs = await repo.readDir("/");
     expect(dirs).to.be.an('array');
-    expect(dirs.length).to.be.at.least(1);
   });
 
   it('should not read non-exist dir', async function() {
@@ -419,7 +515,7 @@ describe('Dir IO Test', function() {
 
   it('should read root dir again', async function() {
     let dirs = await repo.readDir('/');
-    expect(dirs.length).to.be.at.least(2);
+    expect(dirs.length).to.be.at.least(1);
   });
 
   it(`should create dir recursively`, async function() {
@@ -488,7 +584,7 @@ describe('Dir IO Test', function() {
 // FS Test
 // ============================================
 describe('FS Test', function() {
-  let zbox, repo;
+  let repo;
   const newPwd = 'newpwd';
   let filePath, dirPath;
 
@@ -497,9 +593,8 @@ describe('FS Test', function() {
   before(async function() {
     filePath = `/${Date.now()}`;
     dirPath = `/1/2/3/${Date.now()}`;
-    zbox = new Zbox.Zbox();
     await zbox.initEnv({ debug: true });
-    repo = await zbox.openRepo({ uri, pwd, opts: { create: false }});
+    repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
 
   it('should run repo.info() for root dir', async function() {
@@ -516,7 +611,16 @@ describe('FS Test', function() {
   });
 
   it('should run repo.resetPassword()', async function() {
-    await repo.resetPassword({ oldPwd: pwd, newPwd });
+    if (isNodeJs) {
+      await repo.resetPassword({
+        oldPwd: pwd,
+        newPwd,
+        opsLimit: Zbox.OpsLimit.Interactive,
+        memLimit: Zbox.MemLimit.Interactive
+      });
+    } else {
+      await repo.resetPassword({ oldPwd: pwd, newPwd });
+    }
     await repo.close();
   });
 
@@ -529,7 +633,16 @@ describe('FS Test', function() {
   });
 
   it('should change repo password back', async function() {
-    await repo.resetPassword({ oldPwd: newPwd, newPwd: pwd });
+    if (isNodeJs) {
+      await repo.resetPassword({
+        oldPwd: newPwd,
+        newPwd: pwd,
+        opsLimit: Zbox.OpsLimit.Interactive,
+        memLimit: Zbox.MemLimit.Interactive
+      });
+    } else {
+      await repo.resetPassword({ oldPwd: newPwd, newPwd: pwd });
+    }
   });
 
   it('should check path exists', async function() {
