@@ -245,7 +245,9 @@ export class Zbox extends Base {
     ctx.resolver = new Resolver();
     ctx.worker = new Worker(workerPath, { name: 'ZboxWorker' });
     ctx.worker.onmessage = ctx.resolver.resolve.bind(ctx.resolver);
-    ctx.worker.onerror = ctx.worker.onmessage;
+    ctx.worker.onerror = (err) => {
+      console.error(`zbox worker error: ${JSON.stringify(err)}`);
+    };
 
     // add methods based on message types
     Object.keys(MsgTypes[this.scope]).forEach(msgType => {

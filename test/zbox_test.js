@@ -1,14 +1,23 @@
+// Note: This test file is used for both browser and Node.js. It is currently
+// mirrored in two git repos:
+//
+// - https://github.com/zboxfs/zbox-browser
+// - https://github.com/zboxfs/zbox-nodejs
+//
+// When modifed one, you should copy and test it in the other.
+
 const isNodeJs = (typeof process !== 'undefined') && (process.release.name === 'node');
 
 const TIMEOUT = 60 * 1000;
 
-let uri = 'zbox://U9aZMugEpMXHG6fvz2F4UjNC@RqYWCVCTc77kan';
+let uri = 'zbox://AMRhzweUskrvKCGgvkg458ED@ukWpyLVyBz3sSX';
 let uri2 = 'zbox://2c3kbfSqsKYpf36fKKc5YpEY@Rwt6Nh6xesE3n5'; // for Node.js
 const pwd = 'pwd';
 
 if (isNodeJs) {
   uri += '?cache_type=file&base=./tt';
 } else {
+  // if it runs in browser
   uri += '?cache_type=browser';
 }
 
@@ -221,7 +230,7 @@ describe('File IO Test', function() {
   });
 
   it(`should read as stream (Node.js)`, function(done) {
-    if (!isNodeJs) return;
+    if (!isNodeJs) return done();
 
     let file;
 
