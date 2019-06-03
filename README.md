@@ -4,7 +4,7 @@ This package is browser javascript binding for [ZboxFS].
 
 ZboxFS is a zero-details, privacy-focused in-app file system. Its goal is
 to help application store files securely, privately and reliably. Check more
-details about ZboxFS: https://github.com/zboxfs/zbox.
+details about [ZboxFS].
 
 # Get Started
 
@@ -37,7 +37,7 @@ Visit https://try.zbox.io to create a test repo. Copy its URI and replace
     // open the repo
     var repo = await zbox.openRepo({
       uri: '[your_repo_uri]',
-      pwd: 'pwd',
+      pwd: 'secret password',
       opts: { create: true }
     });
 

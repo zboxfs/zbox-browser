@@ -82,4 +82,10 @@ const octokit = Octokit({
   });
   console.log(`Zbox release asset ${releaseFile} uploaded`);
 
+  // commit, add tag, and push code to GitHub
+  execSync(`git add -A`);
+  execSync(`git commit -m 'zbox-browser release v${version}'`);
+  execSync(`git tag -f -a ${version} -m 'zbox-browser release v${version}'`);
+  execSync(`git push`);
+  execSync(`git push origin --tags`);
 })();
