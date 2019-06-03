@@ -140,7 +140,7 @@ class Resolver {
 
   resolve(event) {
     const msg = event.data;
-    console.log(`worker -> main: ${JSON.stringify(msg)}`);
+    //console.log(`worker -> main: ${JSON.stringify(msg)}`);
 
     if (msg.error) {
       const err = new Error(msg.error);

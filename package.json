@@ -1,6 +1,6 @@
 {
   "name": "@zbox/browser",
-  "version": "0.1.5",
+  "version": "0.1.0",
   "description": "Browser javascript binding for ZboxFS",
   "keywords": [
     "webassembly",
@@ -23,14 +23,17 @@
   ],
   "browser": "./lib/index.js",
   "scripts": {
+    "build-wasm": "./scripts/build-wasm.sh",
     "build": "WEBPACK_ENV=prod webpack --mode=production",
-    "test": "node_modules/.bin/webpack-dev-server --progress --color"
+    "release": "node ./scripts/release.js",
+    "test": "webpack-dev-server --progress --color"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "mocha": "^6.1.4",
     "webpack": "^4.29.5",
     "webpack-cli": "^3.2.3",
-    "webpack-dev-server": "^3.3.1"
+    "webpack-dev-server": "^3.3.1",
+    "@octokit/rest": "^16.27.3"
   }
 }

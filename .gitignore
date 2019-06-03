@@ -1,3 +1,6 @@
+# OSX
+.DS_Store
+
 # Logs
 logs
 *.log
@@ -79,5 +82,6 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
-# Zbox lib build output dir
+# Zbox build output dir
 lib/
+dist/

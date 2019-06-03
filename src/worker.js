@@ -432,7 +432,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
   let msg = event.data;
-  console.log(`main -> worker: ${JSON.stringify(msg)}`);
+  //console.log(`main -> worker: ${JSON.stringify(msg)}`);
 
   // reset message result and error
   msg.result = null;
