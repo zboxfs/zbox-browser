@@ -10,13 +10,16 @@ details about [ZboxFS].
 
 ## Installation
 
-- Download `zbox-browser-0.1.0.tar.gz` from [latest release]
-- Extract it to your website's `static` or `public` folder
-- Import it using `<script>` tag
+1. Download `zbox-browser-0.1.0.tar.gz` from [latest release]
+2. Extract it to your website's `static` or `public` folder
+3. Import it using `<script>` tag
 
   ```html
   <script src="zbox-browser-0.1.0/index.js"></script>
   ```
+
+**Note**: because of [same-origin policy] restriction, use this package as cross
+origin script won't work.
 
 ## Hello World Example
 
@@ -70,9 +73,15 @@ Check the API documentation at https://docs.zbox.io/api/.
 This is for advanced user. If simply use this package, you don't need to build
 by yourself.
 
-## Prerequisites
+You need [Docker](https://www.docker.com/) to build this package.
 
-Docker
+Before run build command, update upstream zbox to latest:
+
+```sh
+cd zbox
+git pull
+cd ..
+```
 
 ## Build WebAssembly
 
@@ -103,6 +112,8 @@ After running this command, release tarball will be created in `dist` folder
 and uploaded to GitHub. A draft release will be created as well if it is not
 there yet.
 
+Latest code will also be committed, tagged and pushed to GitHub.
+
 # License
 
 This package is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE)
@@ -111,3 +122,4 @@ file for details.
 [ZboxFS]: https://github.com/zboxfs/zbox
 [latest release]: https://github.com/zboxfs/zbox-browser/releases/latest
 [Personal access tokens]: https://github.com/
+[same-origin policy]: https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy
