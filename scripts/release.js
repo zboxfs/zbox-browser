@@ -57,7 +57,7 @@ const octokit = Octokit({
 
   } else {
     // if no release found, create a new draft release
-    await octokit.repos.createRelease({
+    let { data } = await octokit.repos.createRelease({
       owner,
       repo,
       tag_name: version,
@@ -67,6 +67,7 @@ const octokit = Octokit({
       draft: true,
       prerelease: false
     });
+    release = data;
     console.log(`New draft release created v${version}`);
   }
 

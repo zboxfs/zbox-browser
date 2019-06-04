@@ -10,16 +10,16 @@ details about [ZboxFS].
 
 ## Installation
 
-1. Download `zbox-browser-0.1.0.tar.gz` from [latest release]
+1. Download `zbox-browser-0.1.1.tar.gz` from [latest release]
 2. Extract it to your website's `static` or `public` folder
 3. Import it using `<script>` tag
 
   ```html
-  <script src="zbox-browser-0.1.0/index.js"></script>
+  <script src="zbox-browser-0.1.1/index.js"></script>
   ```
 
-**Note**: because of [same-origin policy] restriction, use this package as cross
-origin script won't work.
+**Note**: because of [same-origin policy] restriction, use this package as a
+cross-origin script won't work.
 
 ## Hello World Example
 
@@ -27,13 +27,13 @@ Visit https://try.zbox.io to create a test repo. Copy its URI and replace
 `[your_repo_uri]` in below.
 
 ```html
-<script src="zbox-browser-0.1.0/index.js"></script>
+<script src="zbox-browser-0.1.1/index.js"></script>
 
 <script>
-  // create a Zbox instance
-  const zbox = new Zbox();
-
   (async () => {
+    // create a Zbox instance
+    const zbox = new Zbox();
+
     // initialise environment, called once before using Zbox
     await zbox.initEnv({ debug: true });
 
@@ -45,12 +45,12 @@ Visit https://try.zbox.io to create a test repo. Copy its URI and replace
     });
 
     // create a file
-    var file = await repo.createFile('/hello_world.txt')
+    var file = await repo.createFile('/hello_world.txt');
 
     // write content to file
-    await file.writeOnce('Hello World!')
+    await file.writeOnce('Hello, World!');
 
-    // seek to begining of the file
+    // seek to the beginning of file
     await file.seek({ from: Zbox.SeekFrom.Start, offset: 0 });
 
     // read all content as string

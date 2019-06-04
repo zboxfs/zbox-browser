@@ -49,7 +49,10 @@ function zboxMsgHandler(msg, msgTypes) {
           zbox = wasm;
           zbox.init_env(debugOn);
         })
-        .catch(err => msg.error =  err)
+        .catch(err => {
+          logger.error(`Load ZboxFS wasm failed: ${err}`);
+          msg.error =  err;
+        })
         .finally(() => postMessage(msg));
       break;
     }
@@ -432,7 +435,7 @@ function versionReaderMsgHandler(msg, msgTypes) {
 
 onmessage = function(event) {
   let msg = event.data;
-  //console.log(`main -> worker: ${JSON.stringify(msg)}`);
+  // console.log(`main -> worker: ${JSON.stringify(msg)}`);
 
   // reset message result and error
   msg.result = null;

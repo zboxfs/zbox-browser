@@ -1,4 +1,5 @@
 import MsgTypes from "./message";
+import { logger } from './logger';
 import { isObject, isNumber, isString, isArrayBufferView, str2ab } from "./utils";
 
 // global context
@@ -59,6 +60,12 @@ class Base {
       if (notMatched) {
         return Promise.reject(new Error('Wrong argument'));
       }
+    }
+
+    // set up logger
+    if (msgType === 'initEnv') {
+      const debugOn = params.debug ? params.debug : false;
+      logger.enable(debugOn);
     }
 
     // deal with array buffer transfer
@@ -140,7 +147,7 @@ class Resolver {
 
   resolve(event) {
     const msg = event.data;
-    //console.log(`worker -> main: ${JSON.stringify(msg)}`);
+    // console.log(`worker -> main: ${JSON.stringify(msg)}`);
 
     if (msg.error) {
       const err = new Error(msg.error);
@@ -246,7 +253,7 @@ export class Zbox extends Base {
     ctx.worker = new Worker(workerPath, { name: 'ZboxWorker' });
     ctx.worker.onmessage = ctx.resolver.resolve.bind(ctx.resolver);
     ctx.worker.onerror = (err) => {
-      console.error(`zbox worker error: ${JSON.stringify(err)}`);
+      console.error(`ZboxFS worker error: ${JSON.stringify(err)}`);
     };
 
     // add methods based on message types
@@ -267,6 +274,7 @@ export class Zbox extends Base {
     if (ctx.worker) {
       ctx.worker.terminate();
       ctx.worker = null;
+      logger.log('ZboxFS exited');
     }
     return Promise.resolve();
   }
