@@ -8,6 +8,10 @@ const MsgTypes = {
       arg: [{ debug: { type: 'boolean', optional: true } }],
       optional: true
     },
+    version: {
+      name: 'version',
+      arg: []
+    },
     exists: {
       name: 'exists',
       arg: ['string']

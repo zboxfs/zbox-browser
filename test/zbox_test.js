@@ -57,6 +57,12 @@ describe('Repo Open/Close Test', function() {
     await zbox.initEnv({ debug: true });
   });
 
+  it('should get zbox version', async function() {
+    const ver = await zbox.version();
+    console.log(ver);
+    expect(ver).to.be.a('string');
+  });
+
   it('should not open repo with wrong argument', async function() {
     await expectError(zbox.openRepo());
     await expectError(zbox.openRepo(null));

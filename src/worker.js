@@ -57,6 +57,12 @@ function zboxMsgHandler(msg, msgTypes) {
       break;
     }
 
+    case msgTypes.version.name: {
+      msg.result = zbox.zbox_version();
+      postMessage(msg);
+      break;
+    }
+
     case msgTypes.exists.name: {
       ensureStr(msg.params);
       msg.result = zbox.Repo.exists(msg.params);
