@@ -1,6 +1,6 @@
 {
   "name": "@zbox/browser",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Browser javascript binding for ZboxFS",
   "keywords": [
     "webassembly",
@@ -24,7 +24,7 @@
   "browser": "./lib/index.js",
   "scripts": {
     "build-wasm": "./scripts/build-wasm.sh",
-    "build": "WEBPACK_ENV=prod webpack --mode=production",
+    "build": "rm -f lib/* && WEBPACK_ENV=prod webpack --mode=production",
     "release": "node ./scripts/release.js",
     "test": "webpack-dev-server --progress --color"
   },
