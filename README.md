@@ -45,7 +45,7 @@ Visit https://try.zbox.io to create a test repo. Copy its URI and replace
     });
 
     // create a file
-    var file = await repo.createFile('/hello_world.txt');
+    let file = await repo.createFile('/hello_world.txt');
 
     // write content to file
     await file.writeOnce('Hello, World!');
@@ -57,9 +57,10 @@ Visit https://try.zbox.io to create a test repo. Copy its URI and replace
     const str = await file.readAllString()
     console.log(str);
 
-    // close file and repo
+    // close file, repo and exit Zbox
     await file.close();
     await repo.close();
+    await zbox.exit();
   })();
 </script>
 ```
