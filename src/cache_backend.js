@@ -83,7 +83,7 @@ class CacheBackend {
             items.forEach(item => {
               self.map.set(item.relPath, item.data);
             });
-            logger.log(`Cache backend opened: ${items.length} cache items loaded`);
+            logger.debug(`Cache backend opened: ${items.length} cache items loaded`);
             self.dbClosed = false;
             resolve();
           };

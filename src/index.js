@@ -64,8 +64,7 @@ class Base {
 
     // set up logger
     if (msgType === 'initEnv') {
-      const debugOn = params.debug ? params.debug : false;
-      logger.enable(debugOn);
+      logger.setLevel(msg.params ? msg.params.logLevel : 'warn');
     }
 
     // deal with array buffer transfer
@@ -253,7 +252,7 @@ export class Zbox extends Base {
     ctx.worker = new Worker(workerPath, { name: 'ZboxWorker' });
     ctx.worker.onmessage = ctx.resolver.resolve.bind(ctx.resolver);
     ctx.worker.onerror = (err) => {
-      console.error(`ZboxFS worker error: ${JSON.stringify(err)}`);
+      logger.error(`ZboxFS worker error: ${JSON.stringify(err)}`);
     };
 
     // add methods based on message types
@@ -274,7 +273,7 @@ export class Zbox extends Base {
     if (ctx.worker) {
       ctx.worker.terminate();
       ctx.worker = null;
-      logger.log('ZboxFS exited');
+      logger.info('ZboxFS exited');
     }
     return Promise.resolve();
   }

@@ -42,19 +42,18 @@ function parseCacheType(uri) {
 function zboxMsgHandler(msg, msgTypes) {
   switch (msg.type) {
     case msgTypes.initEnv.name: {
-      let debugOn = msg.params ? msg.params.debug : false;
-      logger.enable(debugOn);
+      let level = logger.setLevel(msg.params ? msg.params.logLevel : 'warn');
       import('./wasm/zbox')
         .then(wasm => {
           zbox = wasm;
-          zbox.init_env(debugOn);
+          zbox.init_env(level);
         })
         .catch(err => {
           logger.error(`Load ZboxFS wasm failed: ${err}`);
           msg.error =  err;
         })
         .finally(() => postMessage(msg));
-      break;
+      return;
     }
 
     case msgTypes.version.name: {
@@ -67,7 +66,7 @@ function zboxMsgHandler(msg, msgTypes) {
       ensureStr(msg.params);
       msg.result = zbox.Repo.exists(msg.params);
       postMessage(msg);
-      break;
+      return;
     }
 
     case msgTypes.openRepo.name: {
@@ -112,7 +111,7 @@ function zboxMsgHandler(msg, msgTypes) {
         })
         .finally(() => postMessage(msg));
 
-      break;
+      return;
     }
 
     case msgTypes.repairSuperBlock.name: {
@@ -120,7 +119,7 @@ function zboxMsgHandler(msg, msgTypes) {
       zbox.Repo.repairSuperBlock(msg.params.uri,
           msg.params.pwd);
       postMessage(msg);
-      break;
+      return;
     }
   }
 }

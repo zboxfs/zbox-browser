@@ -10,7 +10,7 @@ const isNodeJs = (typeof process !== 'undefined') && (process.release.name === '
 
 const TIMEOUT = 60 * 1000;
 
-let uri = 'zbox://AMRhzweUskrvKCGgvkg458ED@ukWpyLVyBz3sSX';
+let uri = 'zbox://vuxmC37Bc2ALE7AQv22bAF6K@LMW22yDpGXLge3';
 let uri2 = 'zbox://2c3kbfSqsKYpf36fKKc5YpEY@Rwt6Nh6xesE3n5'; // for Node.js
 const pwd = 'pwd';
 
@@ -54,7 +54,7 @@ describe('Repo Open/Close Test', function() {
   before(function() {});
 
   it('should init environment', async function() {
-    await zbox.initEnv({ debug: true });
+    await zbox.initEnv({ logLevel: 'debug' });
   });
 
   it('should get zbox version', async function() {
@@ -164,7 +164,7 @@ describe('File IO Test', function() {
 
   before(async function() {
     filePath = `/${Date.now()}`;
-    await zbox.initEnv({ debug: true });
+    await zbox.initEnv({ logLevel: 'debug' });
     repo = await zbox.openRepo({ uri, pwd, opts: {
       create: true,
       versionLimit: 5
@@ -489,7 +489,7 @@ describe('Dir IO Test', function() {
   before(async function() {
     dirPath = `/${Date.now()}`;
     dirPath2 = `/1/2/3/${Date.now()}`;
-    await zbox.initEnv({ debug: true });
+    await zbox.initEnv({ logLevel: 'debug' });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
 
@@ -608,7 +608,7 @@ describe('FS Test', function() {
   before(async function() {
     filePath = `/${Date.now()}`;
     dirPath = `/1/2/3/${Date.now()}`;
-    await zbox.initEnv({ debug: true });
+    await zbox.initEnv({ logLevel: 'debug' });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
 
