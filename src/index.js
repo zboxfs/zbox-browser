@@ -64,7 +64,11 @@ class Base {
 
     // set up logger
     if (msgType === 'initEnv') {
-      logger.setLevel(msg.params ? msg.params.logLevel : 'warn');
+      if (msg.params && msg.params.log) {
+        logger.config(msg.params.log);
+        // cannot send logger functions to worker, so delete it
+        delete msg.params.log.logger;
+      }
     }
 
     // deal with array buffer transfer
@@ -146,7 +150,33 @@ class Resolver {
 
   resolve(event) {
     const msg = event.data;
-    // console.log(`worker -> main: ${JSON.stringify(msg)}`);
+    //console.log(`worker -> main: ${JSON.stringify(msg)}`);
+
+    // log out message
+    if (msg.scope === 'log') {
+      switch (msg.level) {
+        case 'error':
+          logger.error(msg.msg, msg.from);
+          break;
+
+        case 'warn':
+          logger.warn(msg.msg, msg.from);
+          break;
+
+        case 'info':
+          logger.info(msg.msg, msg.from);
+          break;
+
+        case 'debug':
+          logger.debug(msg.msg, msg.from);
+          break;
+
+        case 'trace':
+          logger.trace(msg.msg, msg.from);
+          break;
+      }
+      return;
+    }
 
     if (msg.error) {
       const err = new Error(msg.error);

@@ -171,6 +171,9 @@ class CacheBackend {
 
 export let cacheBackend = new CacheBackend();
 
+// --------------------------
+// export functions for wasm
+// --------------------------
 export function contains(relPath) {
   return cacheBackend.contains(relPath);
 }

@@ -1,5 +1,5 @@
 import MsgTypes from "./message";
-import { logger } from './logger';
+import { logger } from './worker_logger';
 import { cacheBackend } from './cache_backend';
 import {
   isString,
@@ -42,15 +42,17 @@ function parseCacheType(uri) {
 function zboxMsgHandler(msg, msgTypes) {
   switch (msg.type) {
     case msgTypes.initEnv.name: {
-      let level = logger.setLevel(msg.params ? msg.params.logLevel : 'warn');
-      import('./wasm/zbox')
+      let level = logger.setLevel(
+        (msg.params && msg.params.log) ? msg.params.log.level : 'warn'
+      );
+      import('./wasm/zbox_wasm')
         .then(wasm => {
           zbox = wasm;
           zbox.init_env(level);
         })
         .catch(err => {
-          logger.error(`Load ZboxFS wasm failed: ${err}`);
-          msg.error =  err;
+          logger.error(`load ZboxFS wasm failed: ${err}`);
+          msg.error = `${err}`;
         })
         .finally(() => postMessage(msg));
       return;
@@ -106,7 +108,8 @@ function zboxMsgHandler(msg, msgTypes) {
           repo = opener.open(msg.params.uri, msg.params.pwd);
         })
         .catch(err => {
-          msg.error = err.toString();
+          logger.error(`open repo failed: ${err}`);
+          msg.error = `${err}`;
           cacheBackend.immediateClose();
         })
         .finally(() => postMessage(msg));
@@ -137,7 +140,10 @@ function repoMsgHandler(msg, msgTypes) {
       }
       repo.close();
       cacheBackend.close()
-        .catch(err => msg.error = err)
+        .catch(err => {
+          logger.error(`close local cache failed: ${err}`);
+          msg.error = `${err}`;
+        })
         .finally(() => postMessage(msg));
       return;
     }
@@ -471,7 +477,8 @@ onmessage = function(event) {
       }
     }
   } catch (err) {
-    msg.error = err;
+    logger.error(err);
+    msg.error = `${err}`;
     postMessage(msg);
   }
 };

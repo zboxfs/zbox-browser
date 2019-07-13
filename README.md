@@ -10,12 +10,12 @@ details about [ZboxFS].
 
 ## Installation
 
-1. Download `zbox-browser-0.2.0.tar.gz` from [latest release]
+1. Download `zbox-browser-0.3.0.tar.gz` from [latest release]
 2. Extract it to your website's `static` or `public` folder
 3. Import it using `<script>` tag
 
   ```html
-  <script src="zbox-browser-0.2.0/index.js"></script>
+  <script src="zbox-browser-0.3.0/index.js"></script>
   ```
 
 **Note**: because of [same-origin policy] restriction, use this package as a
@@ -23,11 +23,11 @@ cross-origin script won't work.
 
 ## Hello World Example
 
-Visit https://try.zbox.io to create a test repo. Copy its URI and replace
+Visit https://zbox.io/try to create a test repo. Copy its URI and replace
 `[your_repo_uri]` in below.
 
 ```html
-<script src="zbox-browser-0.2.0/index.js"></script>
+<script src="zbox-browser-0.3.0/index.js"></script>
 
 <script>
   (async () => {
@@ -35,7 +35,7 @@ Visit https://try.zbox.io to create a test repo. Copy its URI and replace
     const zbox = new Zbox();
 
     // initialise environment, called once before using Zbox
-    await zbox.initEnv({ debug: true });
+    await zbox.initEnv({ log: { level: 'debug' } });
 
     // open the repo
     var repo = await zbox.openRepo({
@@ -71,16 +71,9 @@ Check the API documentation at https://docs.zbox.io/api/.
 
 # How to Build
 
-This is for advanced user. If simply use this package, you don't need to build
-by yourself.
+This is for advanced users who want to build this package by themselves.
 
 You need [Docker](https://www.docker.com/) to build this package.
-
-Before run build command, update upstream zbox to latest:
-
-```sh
-git submodule update --remote
-```
 
 ## Build WebAssembly
 
@@ -88,7 +81,7 @@ git submodule update --remote
 npm run build-wasm
 ```
 
-After running this command, wasm file will generate in `src/wasm` folder.
+After this command completed, wasm file will generate in `src/wasm` folder.
 
 ## Build Package
 
@@ -96,7 +89,8 @@ After running this command, wasm file will generate in `src/wasm` folder.
 npm run build
 ```
 
-After running this command, release lib files will be created in `lib` folder.
+After running this command, release lib files will be created in `lib` folder
+and ready to be released to GitHub.
 
 # How to Release
 

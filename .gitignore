@@ -82,6 +82,9 @@ typings/
 # DynamoDB Local files
 .dynamodb/
 
+# Zbox wasm build dir
+zbox_wasm/target
+
 # Zbox build output dir
 lib/
 dist/

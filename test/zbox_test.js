@@ -10,7 +10,7 @@ const isNodeJs = (typeof process !== 'undefined') && (process.release.name === '
 
 const TIMEOUT = 60 * 1000;
 
-let uri = 'zbox://vuxmC37Bc2ALE7AQv22bAF6K@LMW22yDpGXLge3';
+let uri = 'zbox://jZg7SeR3aJFSmhvKs2ghw7dq@r7kMFaqss3tWhc';
 let uri2 = 'zbox://2c3kbfSqsKYpf36fKKc5YpEY@Rwt6Nh6xesE3n5'; // for Node.js
 const pwd = 'pwd';
 
@@ -54,12 +54,11 @@ describe('Repo Open/Close Test', function() {
   before(function() {});
 
   it('should init environment', async function() {
-    await zbox.initEnv({ logLevel: 'debug' });
+    await zbox.initEnv({ log: { level: 'debug' } });
   });
 
   it('should get zbox version', async function() {
     const ver = await zbox.version();
-    console.log(ver);
     expect(ver).to.be.a('string');
   });
 
@@ -79,9 +78,9 @@ describe('Repo Open/Close Test', function() {
     await expectError(zbox.openRepo({ uri: "zbox://foo@", pwd }));
 
     if (isNodeJs) {
-      await expectError(zbox.openRepo({ uri: "zbox://foo@bar?cache_type=browser", pwd }));
-    } else {
       await expectError(zbox.openRepo({ uri: "zbox://foo@bar?cache_type=file", pwd }));
+    } else {
+      await expectError(zbox.openRepo({ uri: "zbox://foo@bar?cache_type=browser", pwd }));
     }
   });
 
@@ -164,7 +163,7 @@ describe('File IO Test', function() {
 
   before(async function() {
     filePath = `/${Date.now()}`;
-    await zbox.initEnv({ logLevel: 'debug' });
+    await zbox.initEnv({ log: { level: 'debug' } });
     repo = await zbox.openRepo({ uri, pwd, opts: {
       create: true,
       versionLimit: 5
@@ -489,7 +488,7 @@ describe('Dir IO Test', function() {
   before(async function() {
     dirPath = `/${Date.now()}`;
     dirPath2 = `/1/2/3/${Date.now()}`;
-    await zbox.initEnv({ logLevel: 'debug' });
+    await zbox.initEnv({ log: { level: 'debug' } });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
 
@@ -608,7 +607,7 @@ describe('FS Test', function() {
   before(async function() {
     filePath = `/${Date.now()}`;
     dirPath = `/1/2/3/${Date.now()}`;
-    await zbox.initEnv({ logLevel: 'debug' });
+    await zbox.initEnv({ log: { level: 'debug' } });
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "@zbox/browser",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Browser javascript binding for ZboxFS",
   "keywords": [
     "webassembly",
@@ -13,7 +13,7 @@
   ],
   "homepage": "https://github.com/zboxfs/zbox-browser",
   "license": "Apache-2.0",
-  "author": "Zbox Support <support@zbox.io>",
+  "author": "Zbox.io",
   "repository": {
     "type": "git",
     "url": "https://github.com/zboxfs/zbox-browser"
