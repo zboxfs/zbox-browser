@@ -10,7 +10,7 @@ const isNodeJs = (typeof process !== 'undefined') && (process.release.name === '
 
 const TIMEOUT = 60 * 1000;
 
-let uri = 'zbox://bjeZrDANCCfETz8LZPmCdwQx@P2w7xHRLMjqHdH';
+let uri = 'zbox://jZg7SeR3aJFSmhvKs2ghw7dq@r7kMFaqss3tWhc';
 let uri2 = 'zbox://2c3kbfSqsKYpf36fKKc5YpEY@Rwt6Nh6xesE3n5'; // for Node.js
 const pwd = 'pwd';
 
@@ -46,7 +46,7 @@ async function expectError(promise) {
 // ============================================
 // Repo Open/Close Test
 // ============================================
-describe.only('Repo Open/Close Test', function() {
+describe('Repo Open/Close Test', function() {
   let repo;
 
   this.timeout(TIMEOUT);
