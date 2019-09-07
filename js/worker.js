@@ -45,7 +45,7 @@ function zboxMsgHandler(msg, msgTypes) {
       let level = logger.setLevel(
         (msg.params && msg.params.log) ? msg.params.log.level : 'warn'
       );
-      import('./wasm/zbox_wasm')
+      import('../pkg/zbox.js')
         .then(wasm => {
           zbox = wasm;
           zbox.init_env(level);

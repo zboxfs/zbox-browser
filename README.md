@@ -75,21 +75,13 @@ This is for advanced users who want to build this package by themselves.
 
 You need [Docker](https://www.docker.com/) to build this package.
 
-## Build WebAssembly
-
-```sh
-npm run build-wasm
-```
-
-After this command completed, wasm file will generate in `src/wasm` folder.
-
 ## Build Package
 
 ```sh
-npm run build
+./build.sh
 ```
 
-After running this command, release lib files will be created in `lib` folder
+After running this command, package files will be created in `dist` folder
 and ready to be released to GitHub.
 
 # How to Release
@@ -98,10 +90,10 @@ To release this package to GitHub, you need a [Personal access tokens].
 
 ```sh
 export ZBOX_BROWSER_GITHUB_TOKEN=[your Personal access token]
-npm run release
+./release.sh
 ```
 
-After running this command, release tarball will be created in `dist` folder
+After running this command, release tarball will be created in `release` folder
 and uploaded to GitHub. A draft release will be created as well if it is not
 there yet.
 
@@ -114,5 +106,5 @@ file for details.
 
 [ZboxFS]: https://github.com/zboxfs/zbox
 [latest release]: https://github.com/zboxfs/zbox-browser/releases/latest
-[Personal access tokens]: https://github.com/
+[Personal access tokens]: https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line
 [same-origin policy]: https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy

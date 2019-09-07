@@ -18,22 +18,19 @@
     "type": "git",
     "url": "https://github.com/zboxfs/zbox-browser"
   },
-  "files": [
-    "lib"
-  ],
-  "browser": "./lib/index.js",
   "scripts": {
-    "build-wasm": "./scripts/build-wasm.sh",
-    "build": "rm -f lib/* && WEBPACK_ENV=prod webpack --mode=production",
-    "release": "node ./scripts/release.js",
-    "test": "webpack-dev-server --progress --color"
+    "build": "rimraf dist pkg && webpack",
+    "start": "webpack-dev-server --color",
+    "release": "rimraf dist pkg release && webpack && node ./scripts/release.js",
+    "test": "cargo test && wasm-pack test --headless"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
-    "mocha": "^6.1.4",
-    "webpack": "^4.29.5",
-    "webpack-cli": "^3.2.3",
-    "webpack-dev-server": "^3.3.1",
+    "@wasm-tool/wasm-pack-plugin": "^0.4.2",
+    "copy-webpack-plugin": "^5.0.3",
+    "webpack": "^4.33.0",
+    "webpack-cli": "^3.3.3",
+    "webpack-dev-server": "^3.7.1",
+    "rimraf": "^2.6.3",
     "@octokit/rest": "^16.27.3"
   }
 }

@@ -9,24 +9,24 @@ const owner = 'zboxfs';
 const repo = 'zbox-browser';
 
 // read package.json to get the current version
-const packageJSON = fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8');
+const packageJSON = fs.readFileSync('./package.json', 'utf8');
 const version = JSON.parse(packageJSON).version;
 
 const releaseName = `zbox-browser-${version}`;
-const releaseDir = `./dist/${releaseName}`;
+const releaseDir = `./release/${releaseName}`;
 const releaseFile = `${releaseName}.tar.gz`;
-const tarball = `./dist/${releaseFile}`;
+const tarball = `./release/${releaseFile}`;
 
-// create release dir and copy lib files to it
+// create release dir and copy dist files to it
 execSync(`rm -rf ${releaseDir}`);
 execSync(`mkdir -p ${releaseDir}`);
-execSync(`cp lib/* ${releaseDir}`);
+execSync(`cp dist/* ${releaseDir}`);
 
 // add release file
 execSync(`echo 'ZboxFS browser js binding v${version}' > ${releaseDir}/release.txt`);
 
 // create release tar ball
-execSync(`tar zcf ${tarball} -C ./dist ${releaseName}`);
+execSync(`tar zcf ${tarball} -C ./release ${releaseName}`);
 console.log(`Zbox release created at ${tarball}`);
 
 // create Octokit instance

@@ -1,38 +1,51 @@
-const path = require('path');
+const path = require("path");
+const CopyPlugin = require("copy-webpack-plugin");
+const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
-const outputPath = path.resolve(__dirname, 'lib');
+const dist = path.resolve(__dirname, "dist");
 
 const browserConfig = {
-  entry: './src/index.js',
-  target: 'web',
-  output: {
-    path: outputPath,
-    filename: 'index.js',
-    libraryTarget: 'umd'
+  mode: "production",
+  entry: {
+    index: "./js/index.js"
   },
-  devtool: 'source-map',
+  output: {
+    path: dist,
+    libraryTarget: "umd",
+    filename: "index.js"
+  },
   devServer: {
     contentBase: [
-      outputPath,
-      path.resolve(__dirname, 'test'),
-      path.resolve(__dirname, 'node_modules/')
+      dist,
+      path.resolve(__dirname, 'tests')
     ],
     compress: true,
+    host: '0.0.0.0',
     port: 9000,
     index: 'index.html'
-  },
-  mode: 'development'
+  }
 };
 
 const workerConfig = {
-  entry: './src/worker.js',
-  target: 'webworker',
-  output: {
-    path: outputPath,
-    filename: 'worker.js'
+  mode: "production",
+  entry: {
+    index: "./js/worker.js"
   },
-  devtool: 'source-map',
-  mode: 'development'
+  target: "webworker",
+  output: {
+    path: dist,
+    filename: "worker.js"
+  },
+  plugins: [
+    new CopyPlugin([
+      path.resolve(__dirname, "static")
+    ]),
+
+    new WasmPackPlugin({
+      crateDirectory: __dirname,
+      extraArgs: "--out-name zbox"
+    }),
+  ]
 };
 
 module.exports = [browserConfig, workerConfig]
