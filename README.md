@@ -10,12 +10,12 @@ details about [ZboxFS].
 
 ## Installation
 
-1. Download `zbox-browser-0.3.0.tar.gz` from [latest release]
+1. Download `zbox-browser-0.4.0.tar.gz` from [latest release]
 2. Extract it to your website's `static` or `public` folder
 3. Import it using `<script>` tag
 
   ```html
-  <script src="zbox-browser-0.3.0/index.js"></script>
+  <script src="zbox-browser-0.4.0/index.js"></script>
   ```
 
 **Note**: because of [same-origin policy] restriction, use this package as a
@@ -27,7 +27,7 @@ Visit https://zbox.io/try to create a test repo. Copy its URI and replace
 `[your_repo_uri]` in below.
 
 ```html
-<script src="zbox-browser-0.3.0/index.js"></script>
+<script src="zbox-browser-0.4.0/index.js"></script>
 
 <script>
   (async () => {
@@ -78,7 +78,7 @@ You need [Docker](https://www.docker.com/) to build this package.
 ## Build Package
 
 ```sh
-./build.sh
+./scripts/build.sh
 ```
 
 After running this command, package files will be created in `dist` folder
@@ -90,7 +90,7 @@ To release this package to GitHub, you need a [Personal access tokens].
 
 ```sh
 export ZBOX_BROWSER_GITHUB_TOKEN=[your Personal access token]
-./release.sh
+./scripts/release.sh
 ```
 
 After running this command, release tarball will be created in `release` folder

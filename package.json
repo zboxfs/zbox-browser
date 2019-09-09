@@ -1,6 +1,6 @@
 {
   "name": "@zbox/browser",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Browser javascript binding for ZboxFS",
   "keywords": [
     "webassembly",
@@ -19,9 +19,8 @@
     "url": "https://github.com/zboxfs/zbox-browser"
   },
   "scripts": {
-    "build": "rimraf dist pkg && webpack",
+    "build": "rimraf dist pkg release && webpack",
     "start": "webpack-dev-server --color",
-    "release": "rimraf dist pkg release && webpack && node ./scripts/release.js",
     "test": "cargo test && wasm-pack test --headless"
   },
   "devDependencies": {

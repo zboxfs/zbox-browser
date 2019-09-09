@@ -1731,8 +1731,8 @@ dependencies = [
 
 [[package]]
 name = "zbox"
-version = "0.8.5"
-source = "git+https://github.com/zboxfs/zbox#5d10ac437bc0927641dda35ac02c1babcaaff339"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "android_logger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.41 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1768,7 +1768,7 @@ dependencies = [
  "wasm-bindgen-test 0.2.50 (registry+https://github.com/rust-lang/crates.io-index)",
  "web-sys 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "wee_alloc 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "zbox 0.8.5 (git+https://github.com/zboxfs/zbox)",
+ "zbox 0.8.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1982,5 +1982,5 @@ dependencies = [
 "checksum winreg 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b2986deb581c4fe11b621998a5e53361efe6b48a151178d0cd9eeffa4dc6acc9"
 "checksum ws2_32-sys 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"
 "checksum xattr 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "244c3741f4240ef46274860397c7c74e50eb23624996930e484c16679633a54c"
-"checksum zbox 0.8.5 (git+https://github.com/zboxfs/zbox)" = "<none>"
+"checksum zbox 0.8.6 (registry+https://github.com/rust-lang/crates.io-index)" = "37fcedb61d9073585f8be9dfc1ad9ef8731f6d3d9f3954395de02b25aacdcfea"
 "checksum zip 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3c21bb410afa2bd823a047f5bda3adb62f51074ac7e06263b2c97ecdd47e9fc6"
