@@ -90,7 +90,7 @@ To release this package to GitHub, you need a [Personal access tokens].
 
 ```sh
 export ZBOX_BROWSER_GITHUB_TOKEN=[your Personal access token]
-./scripts/release.sh
+node ./scripts/release.js
 ```
 
 After running this command, release tarball will be created in `release` folder
