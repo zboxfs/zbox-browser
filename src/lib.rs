@@ -21,6 +21,8 @@ use wasm_bindgen::JsCast;
 
 use zbox::Error;
 
+mod wasm_logger;
+
 #[wasm_bindgen]
 pub fn malloc(size: u32) -> u32 {
     let capacity = (8 + size) as usize;
@@ -163,12 +165,11 @@ fn time_to_u64(t: SystemTime) -> u64 {
 
 #[wasm_bindgen]
 pub fn init_env(level: &str) {
-    let lvl = if level == "off" {
-        None
-    } else {
-        Some(Level::from_str(level).unwrap_or(Level::Warn))
+    if level != "off" {
+        let lvl = Level::from_str(level).unwrap_or(Level::Warn);
+        wasm_logger::init(lvl).expect("Initialise wasm logger failed");
     };
-    zbox::init_env(lvl);
+    zbox::init_env();
 }
 
 #[wasm_bindgen]
