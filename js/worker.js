@@ -103,6 +103,8 @@ function zboxMsgHandler(msg, msgTypes) {
             opener.dedupChunk(opts.dedupChunk);
           if (opts.hasOwnProperty('readOnly'))
             opener.readOnly(opts.readOnly);
+          if (opts.hasOwnProperty('force'))
+            opener.force(opts.force);
 
           // open zbox
           repo = opener.open(msg.params.uri, msg.params.pwd);

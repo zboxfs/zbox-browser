@@ -222,6 +222,11 @@ impl RepoOpener {
         self.inner.read_only(read_only);
     }
 
+    #[wasm_bindgen(js_name = force)]
+    pub fn force(&mut self, force: bool) {
+        self.inner.force(force);
+    }
+
     pub fn open(self, uri: &str, pwd: &str) -> Result<Repo> {
         let repo = map_js_err!(self.inner.open(uri, pwd))?;
         Ok(Repo { inner: Some(repo) })

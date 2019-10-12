@@ -611,7 +611,7 @@ describe('FS Test', function() {
     repo = await zbox.openRepo({ uri, pwd, opts: { create: true }});
   });
 
-  it('should run repo.info() for root dir', async function() {
+  it('should run repo.info()', async function() {
     let info = await repo.info();
     expect(info).to.be.an('object');
     expect(info.volumeId).to.be.an('string');
