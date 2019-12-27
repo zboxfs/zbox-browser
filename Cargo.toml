@@ -39,7 +39,7 @@ web-sys = { version = "0.3.27", features = ["Crypto", "WorkerGlobalScope", "XmlH
 # to interact with JavaScript.
 wasm-bindgen = { version = "0.2.50", features = ["serde-serialize"] }
 
-zbox = { version = "0.8.7", features = ["storage-zbox"] }
+zbox = { version = "0.8.8", features = ["storage-zbox"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2.50"
