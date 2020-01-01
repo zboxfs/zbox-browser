@@ -71,6 +71,13 @@ function zboxMsgHandler(msg, msgTypes) {
       return;
     }
 
+    case msgTypes.destroy.name: {
+      ensureStr(msg.params);
+      msg.result = zbox.Repo.destroy(msg.params);
+      postMessage(msg);
+      return;
+    }
+
     case msgTypes.openRepo.name: {
       ensureStr2(msg.params.uri, msg.params.pwd);
 
@@ -255,6 +262,12 @@ function repoMsgHandler(msg, msgTypes) {
       break;
     }
 
+    case msgTypes.copyDirAll.name: {
+      ensureStr2(msg.params.from, msg.params.to);
+      repo.copyDirAll(msg.params.from, msg.params.to);
+      break;
+    }
+
     case msgTypes.removeFile.name: {
       ensureStr(msg.params);
       repo.removeFile(msg.params);
@@ -402,6 +415,12 @@ function versionReaderMsgHandler(msg, msgTypes) {
     case msgTypes.close.name: {
       vrdr.close();
       delete opened.vrdrs[msg.object];
+      break;
+    }
+
+    case msgTypes.version.name: {
+      let ver = vrdr.version();
+      msg.result = ver;
       break;
     }
 

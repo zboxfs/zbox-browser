@@ -1,0 +1,3 @@
+[target.wasm32-unknown-unknown]
+ar = "/emsdk/upstream/bin/llvm-ar"
+linker = "/emsdk/upstream/bin/lld"

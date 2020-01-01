@@ -16,6 +16,10 @@ const MsgTypes = {
       name: 'exists',
       arg: ['string']
     },
+    destroy: {
+      name: 'destroy',
+      arg: ['string']
+    },
     openRepo: {
       name: 'openRepo',
       arg: [{
@@ -97,6 +101,13 @@ const MsgTypes = {
     },
     copy: {
       name: 'copy',
+      arg: [
+        { from: { type: 'string' } },
+        { to: { type: 'string' } }
+      ]
+    },
+    copyDirAll: {
+      name: 'copyDirAll',
       arg: [
         { from: { type: 'string' } },
         { to: { type: 'string' } }
@@ -184,6 +195,10 @@ const MsgTypes = {
   versionReader: {
     close: {
       name: 'close',
+      arg: []
+    },
+    version: {
+      name: 'version',
       arg: []
     },
     read: {

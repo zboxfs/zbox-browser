@@ -9,8 +9,6 @@ extern crate zbox;
 
 use std::error::Error as StdError;
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::mem;
-use std::ptr;
 use std::result;
 use std::str::FromStr;
 use std::time::SystemTime;
@@ -21,94 +19,8 @@ use wasm_bindgen::JsCast;
 
 use zbox::Error;
 
+mod polyfill;
 mod wasm_logger;
-
-#[wasm_bindgen]
-pub fn malloc(size: u32) -> u32 {
-    let capacity = (8 + size) as usize;
-    let mut buf: Vec<u8> = Vec::with_capacity(capacity);
-    let len = buf.len();
-    let ptr = buf.as_mut_ptr();
-    let p = ptr as *mut u32;
-    unsafe {
-        mem::forget(buf);
-        ptr::write(p, len as u32);
-        ptr::write(p.add(1), capacity as u32);
-        ptr.add(8) as u32
-    }
-}
-
-#[wasm_bindgen]
-pub fn calloc(nmemb: u32, size: u32) -> u32 {
-    malloc(nmemb * size)
-}
-
-#[wasm_bindgen]
-pub fn free(ptr: u32) {
-    if ptr == 0 {
-        return;
-    }
-    let p = ptr as *mut u8;
-    unsafe {
-        let base = p.sub(8) as *mut u32;
-        let len = ptr::read(base) as usize;
-        let capacity = ptr::read(base.add(1)) as usize;
-        let _buf = Vec::from_raw_parts(base, len, capacity);
-        // buffer drops here
-    }
-}
-
-#[wasm_bindgen]
-pub fn __errno_location() -> i32 {
-    0
-}
-
-#[wasm_bindgen]
-pub fn strlen(s: u32) -> u32 {
-    let p = s as *const u8;
-    let mut i: usize = 0;
-    unsafe {
-        while i < std::u32::MAX as usize {
-            if *p.add(i) == 0 {
-                break;
-            }
-            i += 1;
-        }
-    }
-    i as u32
-}
-
-#[wasm_bindgen]
-pub fn strchr(s: u32, c: u32) -> u32 {
-    let mut p = s as *const u8;
-    let c = c as u8;
-    unsafe {
-        while *p != 0 {
-            if *p == c {
-                return p as u32;
-            }
-            p = p.offset(1);
-        }
-    }
-    0
-}
-
-#[wasm_bindgen]
-pub fn strncmp(s1: u32, s2: u32, n: u32) -> i32 {
-    let s1 =
-        unsafe { core::slice::from_raw_parts(s1 as *const u8, n as usize) };
-    let s2 =
-        unsafe { core::slice::from_raw_parts(s2 as *const u8, n as usize) };
-
-    for (&a, &b) in s1.iter().zip(s2.iter()) {
-        let val = (a as i32) - (b as i32);
-        if a != b || a == 0 {
-            return val;
-        }
-    }
-
-    0
-}
 
 #[wasm_bindgen]
 pub fn js_random_uint32() -> u32 {
@@ -129,21 +41,6 @@ pub fn js_random_uint32() -> u32 {
         | (buf[0] as u32);
 
     ret
-}
-
-#[wasm_bindgen]
-pub fn emscripten_asm_const_int(_a: i32, _b: i32, _c: i32) -> i32 {
-    0
-}
-
-#[wasm_bindgen]
-pub fn __assert_fail(_assertion: i32, _file: i32, _line: i32, _function: i32) {
-    wasm_bindgen::throw_str("assert in C trapped");
-}
-
-#[wasm_bindgen]
-pub fn abort() {
-    wasm_bindgen::throw_str("abort");
 }
 
 type Result<T> = result::Result<T, JsValue>;
@@ -386,6 +283,14 @@ pub struct VersionReader {
 impl VersionReader {
     pub fn close(&mut self) {
         self.inner.take();
+    }
+
+    pub fn version(&self) -> Result<JsValue> {
+        let ver = map_js_err!(match self.inner {
+            Some(ref rdr) => rdr.version().map_err(Error::from),
+            None => Err(Error::Closed),
+        })?;
+        Ok(JsValue::from_serde(&ver).unwrap())
     }
 
     pub fn read(&mut self, dst: &mut [u8]) -> Result<usize> {
@@ -680,6 +585,14 @@ impl Repo {
         })
     }
 
+    #[wasm_bindgen(js_name = copyDirAll)]
+    pub fn copy_dir_all(&mut self, from: &str, to: &str) -> Result<()> {
+        map_js_err!(match self.inner {
+            Some(ref mut repo) => repo.copy_dir_all(from, to),
+            None => Err(Error::RepoClosed),
+        })
+    }
+
     #[wasm_bindgen(js_name = removeFile)]
     pub fn remove_file(&mut self, path: &str) -> Result<()> {
         map_js_err!(match self.inner {
@@ -709,5 +622,9 @@ impl Repo {
             Some(ref mut repo) => repo.rename(from, to),
             None => Err(Error::RepoClosed),
         })
+    }
+
+    pub fn destroy(uri: &str) -> Result<()> {
+        map_js_err!(zbox::Repo::destroy(uri))
     }
 }
